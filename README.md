@@ -72,10 +72,6 @@ Este projeto é para fins educacionais e experimentais. Respeite as políticas d
 
 ## 📬 Contato
 
-Para dúvidas ou suporte adicional, entre em contato pelo e-mail: [seu-email@exemplo.com](mailto:seu-email@exemplo.com).
+Para dúvidas ou suporte adicional, entre em contato pelo e-mail: [fporto@sarrat.com.br](fporto@sarrat.com.br)
 
 Obrigado por usar o projeto! Boa leitura! 🚀📚
-
----
-
-Esse README tem uma estrutura organizada e utiliza ícones e formatação para facilitar a leitura e navegação. Ajuste conforme necessário para adequar ao seu projeto específico.

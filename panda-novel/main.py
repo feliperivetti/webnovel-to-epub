@@ -8,13 +8,13 @@ import os
 
 
 # Link da Pagina Principal do Livro, Quantidade de Capítulos Desejados e Função Criada por Mim 
-# main_url = input("Link da Página do Livro (Panda Novel): ")
-# start_chapter = int(input("Capítulo Inicial: "))
-# chapters_quantity = int(input("Quantidade de Capítulos: "))
+main_url = input("Link da Página do Livro (Panda Novel): ")
+start_chapter = int(input("Capítulo Inicial: "))
+chapters_quantity = int(input("Quantidade de Capítulos: "))
 # main_url = 'https://pandanovel.co/panda-novel/shadow-slave'
-main_url = 'https://pandanovel.co/panda-novel/supreme-magus'
-start_chapter = 20
-chapters_quantity = 15
+# main_url = 'https://pandanovel.co/panda-novel/supreme-magus'
+# start_chapter = 20
+# chapters_quantity = 15
 
 
 chapters_url_list = get_chapters_link(main_url, chapters_quantity, start_chapter)

@@ -1,7 +1,3 @@
-Claro! Vou formatar o README para torná-lo mais visualmente atraente e fácil de ler.
-
----
-
 # 📚 Projeto de Webscraping para Criação de EPUB
 
 Bem-vindo ao projeto autoral de **webscraping** para webnovels! Este projeto foi desenvolvido para extrair conteúdo de páginas web de webnovels e criar arquivos EPUB a partir dessas páginas. Atualmente, o projeto suporta os seguintes sites:

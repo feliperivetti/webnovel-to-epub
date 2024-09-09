@@ -61,7 +61,8 @@ def get_novel_metadata(main_url):
 
 
 # Código Usado para Testes
-# main_url = 'https://novelfire.noveljk.org/book/shadow-slave/chapter-2'
-# a = get_chapter_content(main_url, 'chapter-title', 'content')
-# print(a[0].text)
+if __name__ == '__main__':
+    main_url = 'https://novelfire.noveljk.org/book/shadow-slave/chapter-2'
+    a = get_chapter_content(main_url, 'chapter-title', 'content')
+    print(a[0].text)
 

@@ -1,9 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from ebooklib import epub
-from auxiliar import get_chapters_link
-from auxiliar import get_novel_metadata
-from auxiliar import get_chapter_content
+from auxiliar import get_chapters_link, get_novel_metadata, get_chapter_content
 import os
 
 

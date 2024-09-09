@@ -1,5 +1,5 @@
 from ebooklib import epub
-from auxiliar import MyPandaNovelBook, MyRoyalRoadBook
+from auxiliar import MyBook, MyPandaNovelBook, MyRoyalRoadBook
 import requests
 import os
 
@@ -19,7 +19,10 @@ import os
 
 
 
-def create_epub(metadata_list, chapters_url_list, id, language):
+def create_epub(MyBook_subclass_instance: MyBook, id, language):
+
+    metadata_list = MyBook_subclass_instance.get_book_metadata()
+    chapters_url_list = MyBook_subclass_instance.get_chapters_link()
 
     # Criando o Objeto epub
     book = epub.EpubBook()
@@ -62,7 +65,7 @@ def create_epub(metadata_list, chapters_url_list, id, language):
 
     for i in range(num_capitulos):
         url = chapters_url_list[i]
-        infos = get_chapter_content(url, 'chapter-title', 'content')
+        infos = MyBook_subclass_instance.get_chapter_content(url, 'span', 'chapter-title', 'content')
 
         title = infos[0]
         content = infos[1]
@@ -100,10 +103,13 @@ def create_epub(metadata_list, chapters_url_list, id, language):
 
 
 livro_teste1 = MyPandaNovelBook("https://pandanovel.co/panda-novel/shadow-slave", 20, 15)
-book_metadata = livro_teste1.get_book_metadata()
-chapters_url_list = livro_teste1.get_chapters_link()
+# print(livro_teste1.__class__.__name__)
 
-# create_epub(book_metadata, chapters_url_list, 'teste', 'en')
+
+create_epub(livro_teste1, 'teste01', 'en')
+# metadata_list = MyPandaNovelBook.get_book_metadata()
+# print(metadata_list)
 
 
 # refinar essa funcao chamada create epub
+# implementar suporte à estilizacao via css

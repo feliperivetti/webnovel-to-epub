@@ -9,6 +9,8 @@ class MyBook():
         self._chapters_quantity = chapters_quantity
         self._start_chapter = start_chapter
 
+        # Devo criar getter/setter para esses atributos?
+
     @abstractmethod
     def get_book_metadata(self):
         pass
@@ -35,7 +37,7 @@ class MyBook():
     
 
 
-#talvez eu deva criar um funcao para:
+# talvez eu deva criar um funcao para:
 # response = requests.get(main_url)
 # soup = BeautifulSoup(response.text, 'html.parser')
 

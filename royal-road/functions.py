@@ -45,5 +45,6 @@ def get_book_metadata(main_url):
 
 
 # Código Usado para Testes
-# main_url = 'https://www.royalroad.com/fiction/69480/the-land-of-broken-roads'
-# get_book_metadata(main_url)
+if __name__ == '__main__':
+    main_url = 'https://www.royalroad.com/fiction/69480/the-land-of-broken-roads'
+    get_book_metadata(main_url)

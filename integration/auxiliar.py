@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 
 class MyBook():
+    """SuperClasse"""
     def __init__(self, main_url, chapters_quantity, start_chapter=1):
         self._main_url = main_url
         self._chapters_quantity = chapters_quantity
@@ -124,3 +125,7 @@ def get_chapters_link(main_url, chapters_quantity):
 
     return chapters_url_list[:chapters_quantity]
 """
+
+if __name__ == '__main__':
+    livro1 = MyPandaNovelBook('url', 20, 10)
+    print(type(livro1))

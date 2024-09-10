@@ -17,9 +17,9 @@ import os
 
 
 
+# devo passar essa funcao create_epub para dentro da classe MyBook?
 
-
-def create_epub(MyBook_subclass_instance: MyBook, id, language):
+def create_epub(MyBook_subclass_instance: MyPandaNovelBook | MyRoyalRoadBook, id: str, language: str) -> None:
 
     metadata_list = MyBook_subclass_instance.get_book_metadata()
     chapters_url_list = MyBook_subclass_instance.get_chapters_link()

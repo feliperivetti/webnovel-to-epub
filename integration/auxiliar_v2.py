@@ -178,7 +178,7 @@ class MyPandaNovelBook(MyBook):
     
     def get_book_metadata(self):
         response = requests.get(self._main_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, 'lxml')
 
         novel_metadata_div = soup.find('div', class_='header-body container')
         novel_info = novel_metadata_div.find('div', class_='novel-info')
@@ -210,7 +210,7 @@ class MyCentralNovelBook(MyBook):
     
     def get_book_metadata(main_url):
         response = requests.get(main_url)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, 'lxml')
 
         book_metadata_div = soup.find('div', class_='bigcontent nobigcv')
         book_title = book_metadata_div.find('h1', class_='entry-title').text

@@ -13,8 +13,36 @@ from abc import ABC, abstractmethod
 
 
 class MyBook():
-    """SuperClasse"""
-    def __init__(self, main_url, chapters_quantity, start_chapter=1):
+    """
+    Superclasse para representar um livro genérico.
+
+    Esta classe serve como base para outros tipos de livros e fornece os atributos e métodos comuns que podem ser
+    compartilhados por subclasses mais especializadas.
+
+    Parâmetros:
+    -----------
+    main_url: str
+        A URL principal onde o livro pode ser encontrado.
+    chapters_quantity: int
+        A quantidade total de capítulos do livro.
+    start_chapter: int
+        O número do capítulo inicial.
+
+    Métodos:
+    --------
+    get_book_metadata() -> list
+        Método abstrato que deve ser implementado nas subclasses para retornar os metadados do livro.
+
+    get_chapters_link() -> list
+        Método abstrato que deve ser implementado nas subclasses para retornar uma lista contendo o link de todos os capitulos desejados.
+    
+   get_chapter_content(url: str, title_tag: str, title_class: str, main_content_id: str) -> list
+        Retorna uma lista contendo o título do capítulo e a div HTML do conteúdo principal.
+
+    create_epub(id: str, language: str) -> None
+        Utilizando a biblioteca ebooklib, cria um arquivo EPUB a partir de todas as informações adquiridas do livro.
+    """
+    def __init__(self, main_url: str, chapters_quantity: int, start_chapter: int = 1):
         self._main_url = main_url
         self._chapters_quantity = chapters_quantity
         self._start_chapter = start_chapter
@@ -29,7 +57,7 @@ class MyBook():
     def get_chapters_link(self):
         pass
 
-    def get_chapter_content(self, url, title_tag, title_class, main_content_id):
+    def get_chapter_content(self, url: str, title_tag: str, title_class: str, main_content_id: str) -> list:
         response = requests.get(url)
 
         # Criando o Objeto Beautiful Soup
@@ -173,8 +201,22 @@ class MyRoyalRoadBook(MyBook):
 
 class MyPandaNovelBook(MyBook):
 
+    # def __init__(main_url: str, chapters_quantity: int, start_chapter: int = 1) -> None:
     def __init__(self, *args, **kwargs) -> None:
+        """
+        Inicializa um novo livro com os dados fornecidos.
+
+        Parâmetros:
+        ----------
+        main_url: str
+            A URL principal onde o livro pode ser encontrado.
+        chapters_quantity: int
+            A quantidade total de capítulos do livro.
+        start_chapter: int
+            O número do capítulo inicial.
+        """
         super().__init__(*args, **kwargs)
+        # super().__init__(main_url, chapters_quantity, start_chapter)
     
     def get_book_metadata(self):
         response = requests.get(self._main_url)

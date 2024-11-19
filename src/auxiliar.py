@@ -162,7 +162,7 @@ class MyBook():
 
 # talvez eu deva criar uma funcao ou um decorator para:
  # response = requests.get(main_url)
- # soup = BeautifulSoup(response.text, 'html.parser'
+ # soup = BeautifulSoup(response.text, 'html.parser')
 
 # refinar a funcao create_epub, acho que ela faz muita coisa
 

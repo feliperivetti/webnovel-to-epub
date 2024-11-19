@@ -58,7 +58,11 @@ class MyBook():
         pass
 
     def get_chapter_content(self, url: str, title_tag: str, title_class: str, main_content_id: str) -> list:
-        response = requests.get(url)
+        header = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 OPR/114.0.0.0",
+        }
+
+        response = requests.get(url, headers=header)
 
         # Criando o Objeto Beautiful Soup
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -172,7 +176,11 @@ class MyRoyalRoadBook(MyBook):
         super().__init__(*args, **kwargs)
 
     def get_book_metadata(self):
-        response = requests.get(self._main_url)
+        header = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 OPR/114.0.0.0",
+        }
+
+        response = requests.get(self._main_url, headers=header)
         soup = BeautifulSoup(response.text, 'html.parser')
 
         book_metadata_div = soup.find('div', class_='row fic-header')
@@ -219,7 +227,11 @@ class MyPandaNovelBook(MyBook):
         # super().__init__(main_url, chapters_quantity, start_chapter)
     
     def get_book_metadata(self):
-        response = requests.get(self._main_url)
+        header = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 OPR/114.0.0.0",
+        }
+
+        response = requests.get(self._main_url, headers=header)
         soup = BeautifulSoup(response.text, 'lxml')
 
         novel_metadata_div = soup.find('div', class_='header-body container')
@@ -288,5 +300,5 @@ class MyCentralNovelBook(MyBook):
 
 
 if __name__ == '__main__':
-    livro1 = MyPandaNovelBook('url', 20, 10)
-    print(type(livro1))
+    livro_teste2 = MyPandaNovelBook('https://novelfire.docsachhay.net/book/a-regressors-tale-of-cultivation', 100, 180)
+    livro_teste2.create_epub('teste02', 'en')

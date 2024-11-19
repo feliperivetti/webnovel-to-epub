@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from abc import ABC, abstractmethod
 
 
+# TODO
 # FUNCAO PARA SETAR METADADOS (ID, TITLE, LANGUAGE, AUTHOR)
 # FUNCAO PARA SETAR INFORMACOES IMPORTANTES (DESC E SOBRE)
 # FUNCAO PARA ADICIONAR A CAPA
@@ -72,7 +73,6 @@ def set_chapters_content(self, book_object: epub.EpubBook, chapters_url_list: li
         return variables_dict
 
 
-
 # continuar daqui pra baixo
 """def set_toc()
     # Criando a Table of Contents
@@ -101,7 +101,3 @@ def create_epub(self, id: str, language: str) -> None:
 
         # Criando o Arquivo .epub
         epub.write_epub(f'{metadata_list[0].text}.epub', book, {})"""
-
-
-
-

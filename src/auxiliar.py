@@ -160,14 +160,11 @@ class MyBook():
         epub.write_epub(f'{metadata_list[0].text}.epub', book, {})
     
 
-
 # talvez eu deva criar uma funcao ou um decorator para:
  # response = requests.get(main_url)
  # soup = BeautifulSoup(response.text, 'html.parser'
 
 # refinar a funcao create_epub, acho que ela faz muita coisa
-
-
 
 
 class MyRoyalRoadBook(MyBook):
@@ -206,7 +203,6 @@ class MyRoyalRoadBook(MyBook):
         return chapters_url_list
     
     
-
 class MyPandaNovelBook(MyBook):
 
     # def __init__(main_url: str, chapters_quantity: int, start_chapter: int = 1) -> None:
@@ -257,7 +253,6 @@ class MyPandaNovelBook(MyBook):
         return chapters_url_list
     
 
-
 class MyCentralNovelBook(MyBook):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -296,7 +291,6 @@ class MyCentralNovelBook(MyBook):
             chapters_url_list.append(chapters_links[-i-1])
 
         return chapters_url_list
-
 
 
 if __name__ == '__main__':

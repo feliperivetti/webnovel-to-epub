@@ -70,7 +70,7 @@ class MyBook():
         # Filtrando o Conteúdo Desejado de Acordo com Tags e Classes HTML
         chapter_title = soup.find(title_tag, class_ = title_class) #chapter-title
         main_content_div = soup.find('div', id = main_content_id) #content
-        # main_content_div = soup.find('div', class_= main_content_class) #"chapter-inner chapter-content"
+        # main_content_div = soup.find('div', class_= main_content_id) #"chapter-inner chapter-content"
         
         # ajustar para que a funcao possa receber tanto class quanto id
         # atualmente so recebe um dos dois
@@ -101,23 +101,31 @@ class MyBook():
         book_desc.content = str(metadata_list[2])
 
         book_about = epub.EpubHtml(title='About', file_name='about.xhtml')
-        book_about.content = '<h1>About this book</h1><p>Hello, this epub was created as a personal project. Repository at https://github.com/1loadz</p>'
+        book_about.content = '<h1>About this book</h1><p>Hello, this epub was created as a personal project. Repository at https://github.com/1loadz</p><h2>Disclaimer</h2><p>This project uses publicly available data collected from the web for educational and analytical purposes only. There is no intent to infringe on rights or intellectual property. We encourage compliance with laws and ethical guidelines in web scraping.</p>'
 
         book.add_item(book_desc)
         book.add_item(book_about)
 
-
-
         # Adicionando a Capa do Livro
+        header = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 OPR/114.0.0.0",
+        }
+
         book_cover_link = metadata_list[3]
-        book_cover_img = requests.get(book_cover_link)
+        book_cover_img = requests.get(book_cover_link, headers=header)
+
+        # try:
+        #     book_cover_img = requests.get(book_cover_link, headers=header)
+        # except requests.exceptions.ConnectionError:
+        #     book_cover_img.status_code = "Connection refused"
+
+        # book_cover_link = metadata_list[3]
+        # book_cover_img = requests.get(book_cover_link)
 
         with open('book_cover_img.jpg', 'wb') as f:
             noop = f.write(book_cover_img.content)
 
         book.set_cover("image.jpg", open('book_cover_img.jpg', 'rb').read())
-
-
 
         # Bloco de Código que Gera os Capítulos Dinamicamente
         num_capitulos = len(chapters_url_list)
@@ -126,6 +134,7 @@ class MyBook():
         for i in range(num_capitulos):
             url = chapters_url_list[i]
             infos = self.get_chapter_content(url, 'span', 'chapter-title', 'content')
+            # infos = self.get_chapter_content(url, 'h1', 'font-white break-word', 'content')
 
             title = infos[0]
             content = infos[1]
@@ -150,7 +159,7 @@ class MyBook():
 
 
         # Criando a spine
-        book.spine = ['nav', book_desc, book_about]
+        book.spine = ['cover', 'nav', book_desc, book_about]
         book.spine += list(variables_dict.values())
 
         # Deletando o Arquivo da Imagem (ele já foi utilizado)
@@ -294,5 +303,14 @@ class MyCentralNovelBook(MyBook):
 
 
 if __name__ == '__main__':
-    livro_teste2 = MyPandaNovelBook('https://novelfire.docsachhay.net/book/a-regressors-tale-of-cultivation', 100, 180)
+    infos = {
+                "main_url": "https://www.royalroad.com/fiction/98748/infinite-farmer-a-plants-vs-dungeon-progression?utm_source=home&utm_medium=rising_stars",
+                "chapters_quantity": 5,
+                "start_chapter": 1,
+            }
+
+    livro_teste2 = MyRoyalRoadBook(**infos)
+    book_metadata = livro_teste2.get_book_metadata()   
+    print(book_metadata[0].text)
+
     livro_teste2.create_epub('teste02', 'en')

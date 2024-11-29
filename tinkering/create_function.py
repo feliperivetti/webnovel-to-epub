@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 # FUNCAO QUE UTILIZA TUDO ISSO
 
 
-metadata_list = self.get_book_metadata()
+# metadata_list = self.get_book_metadata()
 def set_metadata(self, book_object: epub.EpubBook, metadata_list: list, id: str, language: str) -> None:
     # Meta Dados Obrigatórios
     book_object.set_identifier(id)

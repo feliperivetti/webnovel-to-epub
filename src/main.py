@@ -5,7 +5,7 @@ def main() -> None:
 
     infos = {
                 "main_url": "https://pandanovel.co/panda-novel/cultivation-is-creation",
-                "chapters_quantity": 50,
+                "chapters_quantity": 5,
                 "start_chapter": 55,
             }
 

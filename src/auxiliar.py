@@ -101,7 +101,9 @@ class MyBook():
         book_desc.content = str(metadata_list[2])
 
         book_about = epub.EpubHtml(title='About', file_name='about.xhtml')
-        book_about.content = '<h1>About this book</h1><p>Hello, this epub was created as a personal project. Repository at https://github.com/1loadz</p><h2>Disclaimer</h2><p>This project uses publicly available data collected from the web for educational and analytical purposes only. There is no intent to infringe on rights or intellectual property. We encourage compliance with laws and ethical guidelines in web scraping.</p>'
+        book_about.content = """<h1>About this book</h1><p>Hello, this epub was created as a personal project. Repository at https://github.com/1loadz</p>
+                                <h2>Disclaimer</h2><p>This project uses publicly available data collected from the web for educational and analytical purposes only. 
+                                There is no intent to infringe on rights or intellectual property. We encourage compliance with laws and ethical guidelines in web scraping.</p>"""
 
         book.add_item(book_desc)
         book.add_item(book_about)
@@ -122,10 +124,11 @@ class MyBook():
         # book_cover_link = metadata_list[3]
         # book_cover_img = requests.get(book_cover_link)
 
-        with open('book_cover_img.jpg', 'wb') as f:
-            noop = f.write(book_cover_img.content)
+        # with open('book_cover_img.jpg', 'wb') as f:
+        #     noop = f.write(book_cover_img.content)
 
-        book.set_cover("image.jpg", open('book_cover_img.jpg', 'rb').read())
+        # book.set_cover("image.jpg", open('book_cover_img.jpg', 'rb').read())
+        book.set_cover("image.jpg", book_cover_img.content)
 
         # Bloco de Código que Gera os Capítulos Dinamicamente
         num_capitulos = len(chapters_url_list)
@@ -163,7 +166,7 @@ class MyBook():
         book.spine += list(variables_dict.values())
 
         # Deletando o Arquivo da Imagem (ele já foi utilizado)
-        os.remove('book_cover_img.jpg')
+        # os.remove('book_cover_img.jpg')
 
         # Criando o Arquivo .epub
         epub.write_epub(f'{metadata_list[0].text}.epub', book, {})

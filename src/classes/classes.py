@@ -1,15 +1,9 @@
-"""Módulo Auxiliar
-
-Esse módulo foi utilizado para implementar classes e métodos que serão utilizados
-no módulo main. Dessa forma, os módulos ficam mais organizados e com um propósito
-mais específico, além de facilitar o entendimento do código.
-"""
-
 import requests
-import os
+import os, io
 from ebooklib import epub
 from bs4 import BeautifulSoup
 from abc import ABC, abstractmethod
+import streamlit as st
 
 
 class MyBook():
@@ -134,6 +128,7 @@ class MyBook():
         num_capitulos = len(chapters_url_list)
         variables_dict = {}
 
+        status_text = st.empty()
         for i in range(num_capitulos):
             url = chapters_url_list[i]
             infos = self.get_chapter_content(url, 'span', 'chapter-title', 'content')
@@ -146,8 +141,9 @@ class MyBook():
             variables_dict[key] = epub.EpubHtml(title=title.text, file_name=f'ch{i+1}.xhtml', lang='en')
             variables_dict[key].content = f"<html><body><h1>{title}</h1>{str(content)}</body></html>"
             book.add_item(variables_dict[key])
-            os.system('cls')
-            print(f"Downloads: {i+1}/{num_capitulos}")
+            # os.system('cls')
+            # print(f"Downloads: {i+1}/{num_capitulos}")
+            status_text.info(f"📥 Downloads: {i+1}/{num_capitulos}")
 
 
 
@@ -169,7 +165,20 @@ class MyBook():
         # os.remove('book_cover_img.jpg')
 
         # Criando o Arquivo .epub
-        epub.write_epub(f'{metadata_list[0].text}.epub', book, {})
+        # epub.write_epub(f'{metadata_list[0].text}.epub', book, {})
+
+        # ✅ Gerar o EPUB na memória (não em disco)
+        epub_buffer = io.BytesIO()
+        epub.write_epub(epub_buffer, book)
+        epub_buffer.seek(0)  # Volta o ponteiro do buffer para o início
+
+        # ✅ Criar um botão de download no Streamlit
+        st.download_button(
+            label="📥 Download EPUB",
+            data=epub_buffer,
+            file_name=f'{metadata_list[0].text}.epub',
+            mime='application/epub+zip'
+        )
     
 
 # talvez eu deva criar uma funcao ou um decorator para:

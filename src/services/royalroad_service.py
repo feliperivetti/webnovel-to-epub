@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from src.services.base_service import BaseService
 from src.classes.royalroad_book import MyRoyalRoadBook
-
+from src.utils.logger import logger
 
 class RoyalRoadService(BaseService):
     """
@@ -21,14 +21,22 @@ class RoyalRoadService(BaseService):
         search_url = f"{self.BASE_URL}/fictions/search"
         params = {'title': query.strip()}
         
+        logger.info(f"[{self.service_name}] Searching for: '{query}'")
+        
         try:
-            # Using self.session from BaseService instead of requests.get
+            # Requisição via sessão compartilhada
             response = self.session.get(search_url, params=params, timeout=10)
             response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
             
+            soup = BeautifulSoup(response.text, 'html.parser')
             results = []
+            
+            # Selector para os itens da lista
             items = soup.select('div.fiction-list-item')
+            
+            if not items:
+                logger.warning(f"[{self.service_name}] No results found for '{query}'. This might be a search with no matches or a change in the site's CSS selectors.")
+                return []
             
             for item in items:
                 # 1. Title and URL extraction
@@ -58,13 +66,18 @@ class RoyalRoadService(BaseService):
                         "chapters_count": chapters_count
                     })
             
+            logger.info(f"[{self.service_name}] Search successful. Found {len(results)} items.")
             return results
+
         except Exception as e:
-            print(f"❌ Royal Road Search Error: {e}")
+            # exc_info=True garante que o Traceback completo apareça no log de erro
+            logger.error(f"[{self.service_name}] Search error for query '{query}': {str(e)}", exc_info=True)
             return []
 
     def get_book_instance(self, url: str, qty: int, start: int) -> MyRoyalRoadBook:
         """
         Implementation of the abstract factory method for Royal Road.
         """
+        logger.info(f"[{self.service_name}] Creating MyRoyalRoadBook instance for URL: {url}")
         return MyRoyalRoadBook(url, qty, start)
+    

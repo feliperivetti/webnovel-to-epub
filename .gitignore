@@ -1,7 +1,41 @@
+# --- Python & Environment ---
 venv/
-.vscode
+.venv/
+env/
 __pycache__/
-examples/*
-tinkering/*
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# --- Logs & Runtime ---
+logs/*
+!logs/.gitkeep
+*.log
+
+# --- Generated Files (Scraper Outputs) ---
 *.epub
 *.jpg
+*.jpeg
+*.png
+*.gif
+
+# --- Editor & IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Experiments & Temporary Folders ---
+examples/
+tinkering/
+
+# --- Operating System Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Environment Variables & Secrets ---
+.env
+.env.local
+.env.*

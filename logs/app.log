@@ -1,0 +1,23 @@
+2026-01-05 17:46:39 | INFO     | 🚀 Initializing EPUB generation | URL: https://www.royalroad.com/fiction/143894/blessed-by-death-an-archmages-second-life-op-mc?utm_source=home&utm_medium=rising-stars | Qty: 10 | Start: 5
+2026-01-05 17:46:39 | INFO     | [RoyalRoadService] Creating MyRoyalRoadBook instance for URL: https://www.royalroad.com/fiction/143894/blessed-by-death-an-archmages-second-life-op-mc?utm_source=home&utm_medium=rising-stars
+2026-01-05 17:46:39 | INFO     | [MyRoyalRoadBook] Starting EPUB generation for: https://www.royalroad.com/fiction/143894/blessed-by-death-an-archmages-second-life-op-mc?utm_source=home&utm_medium=rising-stars
+2026-01-05 17:46:39 | INFO     | [MyRoyalRoadBook] Fetching metadata from Royal Road: https://www.royalroad.com/fiction/143894/blessed-by-death-an-archmages-second-life-op-mc?utm_source=home&utm_medium=rising-stars
+2026-01-05 17:46:39 | INFO     | [MyRoyalRoadBook] Metadata extracted: 'Blessed by Death: An Archmage's Second Life [OP MC, LitRPG]' by 'byeuterpe'
+2026-01-05 17:46:39 | INFO     | [MyRoyalRoadBook] Retrieving chapter list from main page...
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Total chapters available on site: 22
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Queued 10 chapters for download (Range: 5-14)
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Metadata loaded: 'Blessed by Death: An Archmage's Second Life [OP MC, LitRPG]' by 'byeuterpe' | Total chapters: 10
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloading cover: https://www.royalroadcdn.com/public/covers-large/143894-blessed-by-death-an-archmages-second-life.jpg?time=1767421725
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Starting parallel download (2 workers)...
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloaded chapter 1/10
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloaded chapter 2/10
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloaded chapter 3/10
+2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloaded chapter 4/10
+2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 5/10
+2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 6/10
+2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 7/10
+2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 8/10
+2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 9/10
+2026-01-05 17:46:42 | INFO     | [MyRoyalRoadBook] Downloaded chapter 10/10
+2026-01-05 17:46:42 | INFO     | [MyRoyalRoadBook] DONE: 'Blessed by Death: An Archmage's Second Life [OP MC, LitRPG]' generated in 3.19s
+2026-01-05 17:46:42 | INFO     | ✅ EPUB successfully generated: 'Blessed by Death An Archmages Second Life OP MC LitRPG.epub'

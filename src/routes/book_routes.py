@@ -22,7 +22,7 @@ def generate_epub(
     Identifies the source novel site, scrapes the content, 
     and returns a generated EPUB file as a stream.
     """
-    logger.info(f"🚀 Initializing EPUB generation for: {url}")
+    logger.info(f"🚀 Initializing EPUB generation | URL: {url} | Qty: {qty} | Start: {start}")
     
     # 1. Map domains to Service Classes
     providers = {
@@ -43,7 +43,7 @@ def generate_epub(
         logger.warning(f"⚠️ Unsupported domain requested: {url}")
         raise HTTPException(
             status_code=400, 
-            detail="Source not supported. Supported domains: royalroad.com, centralnovel.com, pandanovel.co"
+            detail="Source not supported. Supported domains: royalroad.com, centralnovel.com, pandanovel.co, novelfire.net"
         )
 
     try:
@@ -52,27 +52,26 @@ def generate_epub(
         scraper = service.get_book_instance(url, qty, start)
 
         # 4. Process chapters and get the buffer
-        # Logic check: if your scraper returns io.BytesIO, use it directly.
-        # If it returns bytes, wrap it in io.BytesIO(buffer_data).
         result_buffer = scraper.create_epub_buffer()
 
-        # Handle both raw bytes and BytesIO objects to avoid the "bytes-like object required" error
+        # Handle both raw bytes and BytesIO objects to avoid "bytes-like object required" error
         if isinstance(result_buffer, bytes):
             final_stream = io.BytesIO(result_buffer)
         else:
-            # If it's already a BytesIO object, ensure it's at the start
+            # If it's already a BytesIO object, ensure cursor is at the start
             final_stream = result_buffer
             final_stream.seek(0)
 
         # 5. Filename Sanitization
         book_title = getattr(scraper, 'book_title', 'novel_ebook')
         filename_raw = f"{book_title}.epub"
+        # Keep alphanumeric, spaces, dots, and hyphens
         filename_clean = re.sub(r'[^\w\s.-]', '', filename_raw).strip()
         
         if not filename_clean or filename_clean == ".epub":
             filename_clean = "novel_ebook.epub"
 
-        logger.info(f"✅ EPUB '{filename_clean}' generated successfully!")
+        logger.info(f"✅ EPUB successfully generated: '{filename_clean}'")
         
         # 6. Return as a stream
         return StreamingResponse(
@@ -85,8 +84,10 @@ def generate_epub(
         )
 
     except Exception as e:
-        logger.error(f"❌ Generation error for {url}: {str(e)}", exc_info=True)
+        # exc_info=True captures the full stack trace in the log file
+        logger.error(f"❌ Generation failed for {url}: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500, 
             detail=f"An error occurred while generating the book: {str(e)}"
         )
+    

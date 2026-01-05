@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from src.services.base_service import BaseService
 from src.classes.centralnovel_book import MyCentralNovelBook
-
+from src.utils.logger import logger
 
 class CentralNovelService(BaseService):
     """
@@ -21,16 +21,23 @@ class CentralNovelService(BaseService):
         search_url = f"{self.BASE_URL}/"
         params = {'s': query.strip()}
         
+        logger.info(f"[{self.service_name}] Searching for novels with query: '{query}'")
+        
         try:
-            # Using self.session instead of requests.get
+            # Realizando a requisição via sessão herdada
             response = self.session.get(search_url, params=params, timeout=10)
             response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
             
+            soup = BeautifulSoup(response.text, 'html.parser')
             results = []
-            # Specific container for this theme's search results
+            
+            # Buscando o container dos artigos
             articles = soup.find_all('article', class_='maindet')
             
+            if not articles:
+                logger.warning(f"[{self.service_name}] No articles found for query: '{query}'. The site layout might have changed or no results exist.")
+                return []
+
             for article in articles:
                 title_tag = article.find('h2')
                 link_tag = title_tag.find('a') if title_tag else None
@@ -44,14 +51,19 @@ class CentralNovelService(BaseService):
                         "cover": img_tag.get('src') if img_tag else None,
                         "chapters_count": chapter_span.get_text(strip=True) if chapter_span else "N/A"
                     })
+            
+            logger.info(f"[{self.service_name}] Found {len(results)} results for '{query}'")
             return results
             
         except Exception as e:
-            print(f"❌ Central Novel Search Error: {e}")
+            # exc_info=True salvará o rastro completo do erro no arquivo app.log
+            logger.error(f"[{self.service_name}] Search error for query '{query}': {str(e)}", exc_info=True)
             return []
 
     def get_book_instance(self, url: str, qty: int, start: int) -> MyCentralNovelBook:
         """
         Returns a specialized book instance for Central Novel.
         """
+        logger.info(f"[{self.service_name}] Instantiating MyCentralNovelBook for URL: {url}")
         return MyCentralNovelBook(url, qty, start)
+    

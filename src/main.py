@@ -1,49 +1,59 @@
-from classes.classes import MyBook, MyPandaNovelBook, MyRoyalRoadBook
-import streamlit as st
+import time
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from src.routes import book_routes, search_routes
 
-def main() -> None:
+# Initialize the FastAPI application with professional metadata
+app = FastAPI(
+    title="Novel Scraper API",
+    description="Professional API for scraping novels, searching sources, and generating EPUB files.",
+    version="1.0.0"
+)
 
-    st.set_page_config(page_title="Book Downloader", page_icon=":book:")
-    st.write("# Novel Downloader")
+# --- CORS CONFIGURATION ---
+# This allows browsers and the Swagger UI to communicate with your API without security blocks
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    main_url = st.text_input("Enter the book URL:", key="book_url")
-    chapters_quantity = st.number_input("Enter the number of chapters to download:", min_value=1, value=10, key="chapters_quantity")
-    start_chapter = st.number_input("Enter the starting chapter number:", min_value=1, value=1, key="start_chapter")
+# --- PERFORMANCE MIDDLEWARE ---
+# Automatically calculates and logs the processing time for every request
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.perf_counter()
+    
+    # Process the request
+    response = await call_next(request)
+    
+    # Calculate duration
+    process_time = time.perf_counter() - start_time
+    
+    # Add the duration to the response headers for debugging
+    response.headers["X-Process-Time"] = f"{process_time:.4f} sec"
+    
+    # Console log for monitoring
+    print(f"⏱️  Path: {request.url.path} | Method: {request.method} | Duration: {process_time:.4f}s")
+    
+    return response
 
-    infos = {
-        "main_url": main_url,
-        "chapters_quantity": chapters_quantity,
-        "start_chapter": start_chapter,
+# --- ROUTE REGISTRATION ---
+# Registering modular routers to keep the code clean and scalable
+app.include_router(book_routes.router)
+app.include_router(search_routes.router)
+
+# --- HEALTH CHECK ROUTE ---
+@app.get("/", tags=["Health"])
+def health_check():
+    return {
+        "status": "online",
+        "message": "Novel Scraper API is running smoothly",
+        "timestamp": time.time()
     }
 
-    if st.button("Download Book"):
-        if main_url and chapters_quantity > 0 and start_chapter > 0:
-            try:
-                livro_teste = MyPandaNovelBook(**infos)
-                livro_teste.create_epub('teste01', 'en')
-                # st.success("Book downloaded successfully!")
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-        else:
-            st.warning("Please fill in all fields correctly.")
-
-    # livro_teste2 = MyPandaNovelBook(**infos)
-    # book_metadata = livro_teste2.get_book_metadata()   
-    # print(book_metadata[0])
-    # chapters_url_list = livro_teste1.get_chapters_link()
-    # print(chapters_url_list)
-    # livro_teste2.create_epub('teste02', 'en')
-
-
-    # infos3 = {
-    #             "main_url": "https://www.royalroad.com/fiction/36735/the-perfect-run",
-    #             "chapters_quantity": 5,
-    #             "start_chapter": 1,
-    #         }
-
-    # livro_teste3 = MyRoyalRoadBook(**infos3)
-    # livro_teste3.create_epub('teste03', 'en')
-
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    uvicorn.run("src.main:app", host="127.0.0.1", port=8000, reload=True)

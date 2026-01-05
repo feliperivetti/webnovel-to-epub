@@ -1,6 +1,8 @@
 from pydantic import BaseModel, HttpUrl, Field
 from typing import List, Optional
 
+from src.utils.constants import API_CONFIG
+
 # --- SEARCH SCHEMAS ---
 
 class NovelSearchResult(BaseModel):
@@ -26,7 +28,7 @@ class EpubRequest(BaseModel):
     Useful if you decide to change from GET to POST later.
     """
     url: HttpUrl
-    qty: int = Field(default=1, ge=1, le=500, description="Quantity of chapters to download")
+    qty: int = Field(default=1, ge=1, le=API_CONFIG["MAX_CHAPTERS_LIMIT"], description="Quantity of chapters to download")
     start: int = Field(default=1, ge=1, description="Starting chapter number")
 
 

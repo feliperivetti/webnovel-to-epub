@@ -6,6 +6,8 @@ from fastapi.responses import StreamingResponse
 from src.services.centralnovel_service import CentralNovelService
 from src.services.pandanovel_service import PandaNovelService
 from src.services.royalroad_service import RoyalRoadService
+
+from src.utils.constants import API_CONFIG
 from src.utils.logger import logger
 
 
@@ -15,7 +17,7 @@ router = APIRouter(prefix="/books", tags=["Books"])
 @router.get("/generate-epub")
 def generate_epub(
     url: str = Query(..., description="The full URL of the novel series"),
-    qty: int = Query(default=1, ge=1, le=500, description="Number of chapters to download"),
+    qty: int = Query(default=1, ge=1, le=API_CONFIG["MAX_CHAPTERS_LIMIT"], description="Number of chapters to download"),
     start: int = Query(default=1, ge=1, description="Starting chapter number")
 ):
     """

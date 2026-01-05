@@ -5,6 +5,8 @@ import requests
 import concurrent.futures
 from abc import ABC, abstractmethod
 from ebooklib import epub
+
+from src.utils.constants import API_CONFIG, EPUB_HTML_TEMPLATE, EPUB_STRINGS
 from src.utils.logger import logger
 
 
@@ -77,13 +79,13 @@ class MyBook(ABC):
 
         self.book_title = to_str(metadata.get('book_title', 'Unknown'))
         book_author = to_str(metadata.get('book_author', 'Unknown Author'))
-        book_description = to_str(metadata.get('book_description', 'No description available.'))
+        book_description = to_str(metadata.get('book_description', EPUB_STRINGS["default_no_description"]))
         cover_url = to_str(metadata.get('book_cover_link'))
         
         chapter_urls = self.get_chapters_link()
         total_to_download = len(chapter_urls)
         
-        logger.info(f"[{self.class_name}] Metadata loaded: '{self.book_title}' by '{book_author}' | Total chapters: {total_to_download}")
+        logger.info(f"[{self.class_name}] Metadata loaded: '{self.book_title}' | Total chapters: {total_to_download}")
 
         # 2. Initialize EPUB object
         book = epub.EpubBook()
@@ -97,7 +99,7 @@ class MyBook(ABC):
         if cover_url and cover_url.startswith('http'):
             try:
                 logger.info(f"[{self.class_name}] Downloading cover: {cover_url}")
-                cover_res = self._session.get(cover_url, timeout=15)
+                cover_res = self._session.get(cover_url, timeout=API_CONFIG["DEFAULT_TIMEOUT"])
                 cover_res.raise_for_status()
                 book.set_cover("cover.jpg", cover_res.content)
             except Exception as e:
@@ -105,39 +107,28 @@ class MyBook(ABC):
 
         # 4. Create Essential Pages
         # 4.1 Synopsis
-        desc_page = epub.EpubHtml(title='Synopsis', file_name='synopsis.xhtml', lang='en')
-        desc_page.set_content(f"""<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>Synopsis</title></head>
-<body>
-    <section>
-        <h1>Synopsis</h1>
-        <p>{book_description.replace(chr(10), '<br/>')}</p>
-    </section>
-</body>
-</html>""".encode('utf-8'))
+        desc_page = epub.EpubHtml(title=EPUB_STRINGS["synopsis_title"], file_name='synopsis.xhtml', lang='en')
+        desc_page.set_content(EPUB_HTML_TEMPLATE.format(
+            title=EPUB_STRINGS["synopsis_title"],
+            content=f"<p>{book_description.replace(chr(10), '<br/>')}</p>"
+        ).encode('utf-8'))
         book.add_item(desc_page)
 
         # 4.2 Disclaimer
-        disclaimer_page = epub.EpubHtml(title='About this Project', file_name='disclaimer.xhtml', lang='en')
-        disclaimer_page.set_content(f"""<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>About this Project</title></head>
-<body>
-    <section>
-        <h1>About this Project</h1>
-        <p>This EPUB was generated automatically as a personal project.</p>
-        <p><em>Disclaimer:</em> This book only utilizes publicly available data. All rights belong to the original authors.</p>
-    </section>
-</body>
-</html>""".encode('utf-8'))
+        disclaimer_page = epub.EpubHtml(title=EPUB_STRINGS["disclaimer_title"], file_name='disclaimer.xhtml', lang='en')
+        disclaimer_page.set_content(EPUB_HTML_TEMPLATE.format(
+            title=EPUB_STRINGS["disclaimer_title"],
+            content=EPUB_STRINGS["disclaimer_content"]
+        ).encode('utf-8'))
         book.add_item(disclaimer_page)
 
         # 5. Parallel Chapter Download
         chapters_data_results = [None] * total_to_download
-        logger.info(f"[{self.class_name}] Starting parallel download (2 workers)...")
+        logger.info(f"[{self.class_name}] Starting parallel download of {total_to_download} chapters with {API_CONFIG['MAX_WORKERS']} workers.")
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        errors_count = 0 
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=API_CONFIG["MAX_WORKERS"]) as executor:
             future_to_index = {
                 executor.submit(self._fetch_with_retry, url): i 
                 for i, url in enumerate(chapter_urls)
@@ -146,13 +137,19 @@ class MyBook(ABC):
                 index = future_to_index[future]
                 try:
                     chapters_data_results[index] = future.result()
-                    logger.info(f"[{self.class_name}] Downloaded chapter {index + 1}/{total_to_download}")
                 except Exception as e:
-                    logger.error(f"[{self.class_name}] Permanent failure on chapter {index+1}: {e}")
+                    errors_count += 1
+                    logger.error(f"[{self.class_name}] Error on chapter {index+1}: {e}")
                     chapters_data_results[index] = {
                         'chapter_title': f'Error Chapter {index+1}', 
-                        'main_content': 'Content could not be downloaded.'
+                        'main_content': EPUB_STRINGS["error_content"]
                     }
+
+        # FINAL SUMMARY LOG
+        if errors_count == 0:
+            logger.info(f"[{self.class_name}] Successfully downloaded chapters {self._start_chapter} to {self._start_chapter + total_to_download - 1}.")
+        else:
+            logger.warning(f"[{self.class_name}] Finished download with {errors_count} errors.")
 
         # 6. Assemble EPUB Structure
         epub_chapters = []
@@ -166,17 +163,11 @@ class MyBook(ABC):
             raw_html = content_node.decode_contents() if hasattr(content_node, 'decode_contents') else str(content_node)
 
             chapter = epub.EpubHtml(title=title, file_name=f'chap_{i + 1}.xhtml', lang='en')
-            xhtml_body = f"""<!DOCTYPE html>
-                            <html xmlns="http://www.w3.org/1999/xhtml">
-                            <head><title>{title}</title></head>
-                            <body>
-                                <section>
-                                    <h1>{title}</h1>
-                                    <div>{raw_html}</div>
-                                </section>
-                            </body>
-                            </html>"""
-            chapter.set_content(xhtml_body.encode('utf-8'))
+            chapter.set_content(EPUB_HTML_TEMPLATE.format(
+                title=title,
+                content=raw_html
+            ).encode('utf-8'))
+            
             book.add_item(chapter)
             epub_chapters.append(chapter)
 
@@ -184,12 +175,11 @@ class MyBook(ABC):
             logger.critical(f"[{self.class_name}] Generation failed: No chapters collected.")
             raise ValueError("No chapters found to build the EPUB.")
 
-        # 7. Finalize TOC and Navigation
+        # 7. Structure TOC and Spine
         book.toc = (
             (epub.Section('Essential Information'), (desc_page, disclaimer_page)),
             (epub.Section('Table of Contents'), tuple(epub_chapters)),
         )
-
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
         book.spine = ['nav', desc_page, disclaimer_page] + epub_chapters

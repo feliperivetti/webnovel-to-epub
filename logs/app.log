@@ -1,23 +1,93 @@
-2026-01-05 17:46:39 | INFO     | 🚀 Initializing EPUB generation | URL: https://www.royalroad.com/fiction/143894/blessed-by-death-an-archmages-second-life-op-mc?utm_source=home&utm_medium=rising-stars | Qty: 10 | Start: 5
-2026-01-05 17:46:39 | INFO     | [RoyalRoadService] Creating MyRoyalRoadBook instance for URL: https://www.royalroad.com/fiction/143894/blessed-by-death-an-archmages-second-life-op-mc?utm_source=home&utm_medium=rising-stars
-2026-01-05 17:46:39 | INFO     | [MyRoyalRoadBook] Starting EPUB generation for: https://www.royalroad.com/fiction/143894/blessed-by-death-an-archmages-second-life-op-mc?utm_source=home&utm_medium=rising-stars
-2026-01-05 17:46:39 | INFO     | [MyRoyalRoadBook] Fetching metadata from Royal Road: https://www.royalroad.com/fiction/143894/blessed-by-death-an-archmages-second-life-op-mc?utm_source=home&utm_medium=rising-stars
-2026-01-05 17:46:39 | INFO     | [MyRoyalRoadBook] Metadata extracted: 'Blessed by Death: An Archmage's Second Life [OP MC, LitRPG]' by 'byeuterpe'
-2026-01-05 17:46:39 | INFO     | [MyRoyalRoadBook] Retrieving chapter list from main page...
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Total chapters available on site: 22
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Queued 10 chapters for download (Range: 5-14)
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Metadata loaded: 'Blessed by Death: An Archmage's Second Life [OP MC, LitRPG]' by 'byeuterpe' | Total chapters: 10
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloading cover: https://www.royalroadcdn.com/public/covers-large/143894-blessed-by-death-an-archmages-second-life.jpg?time=1767421725
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Starting parallel download (2 workers)...
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloaded chapter 1/10
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloaded chapter 2/10
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloaded chapter 3/10
-2026-01-05 17:46:40 | INFO     | [MyRoyalRoadBook] Downloaded chapter 4/10
-2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 5/10
-2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 6/10
-2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 7/10
-2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 8/10
-2026-01-05 17:46:41 | INFO     | [MyRoyalRoadBook] Downloaded chapter 9/10
-2026-01-05 17:46:42 | INFO     | [MyRoyalRoadBook] Downloaded chapter 10/10
-2026-01-05 17:46:42 | INFO     | [MyRoyalRoadBook] DONE: 'Blessed by Death: An Archmage's Second Life [OP MC, LitRPG]' generated in 3.19s
-2026-01-05 17:46:42 | INFO     | ✅ EPUB successfully generated: 'Blessed by Death An Archmages Second Life OP MC LitRPG.epub'
+2026-01-05 18:36:40 | INFO     | 🚀 Initializing EPUB generation | URL: https://centralnovel.com/series/lord-of-mysteries-20240505/ | Qty: 500 | Start: 1
+2026-01-05 18:36:40 | INFO     | [CentralNovelService] Instantiating MyCentralNovelBook for URL: https://centralnovel.com/series/lord-of-mysteries-20240505/
+2026-01-05 18:36:40 | INFO     | [MyCentralNovelBook] Starting EPUB generation for: https://centralnovel.com/series/lord-of-mysteries-20240505/
+2026-01-05 18:36:40 | INFO     | [MyCentralNovelBook] Fetching metadata from: https://centralnovel.com/series/lord-of-mysteries-20240505/
+2026-01-05 18:36:41 | INFO     | [MyCentralNovelBook] Metadata extracted for: Lord of Mysteries
+2026-01-05 18:36:41 | INFO     | [MyCentralNovelBook] Generating chapter URLs for range: 1 to 500
+2026-01-05 18:36:43 | INFO     | [MyCentralNovelBook] Successfully generated 500 chapter links.
+2026-01-05 18:36:43 | INFO     | [MyCentralNovelBook] Metadata loaded: 'Lord of Mysteries' | Total chapters: 500
+2026-01-05 18:36:43 | INFO     | [MyCentralNovelBook] Downloading cover: https://i1.wp.com/centralnovel.com/wp-content/uploads/2023/04/Lord-of-Mysteries-CAPA.jpg?resize=370,500
+2026-01-05 18:36:43 | INFO     | [MyCentralNovelBook] Starting parallel download of 500 chapters...
+2026-01-05 18:38:15 | INFO     | [MyCentralNovelBook] Successfully downloaded chapters 1 to 500.
+2026-01-05 18:38:16 | INFO     | [MyCentralNovelBook] DONE: 'Lord of Mysteries' generated in 95.84s
+2026-01-05 18:38:16 | INFO     | ✅ EPUB successfully generated: 'Lord of Mysteries.epub'
+2026-01-05 18:42:47 | INFO     | 🚀 Initializing EPUB generation | URL: https://centralnovel.com/series/the-beginning-after-the-end/ | Qty: 530 | Start: 1
+2026-01-05 18:42:47 | INFO     | [CentralNovelService] Instantiating MyCentralNovelBook for URL: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:42:47 | INFO     | [MyCentralNovelBook] Starting EPUB generation for: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:42:47 | INFO     | [MyCentralNovelBook] Fetching metadata from: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:42:47 | ERROR    | [MyCentralNovelBook] Failed to get metadata: 503 Server Error: Service Unavailable for url: https://centralnovel.com/series/the-beginning-after-the-end/
+Traceback (most recent call last):
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 28, in get_book_metadata
+    response.raise_for_status()
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 503 Server Error: Service Unavailable for url: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:42:47 | ERROR    | [MyCentralNovelBook] Critical failure fetching metadata: 503 Server Error: Service Unavailable for url: https://centralnovel.com/series/the-beginning-after-the-end/
+Traceback (most recent call last):
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\base_book.py", line 59, in create_epub_buffer
+    metadata = self.get_book_metadata()
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 54, in get_book_metadata
+    raise e
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 28, in get_book_metadata
+    response.raise_for_status()
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 503 Server Error: Service Unavailable for url: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:42:47 | ERROR    | ❌ Generation failed for https://centralnovel.com/series/the-beginning-after-the-end/: 503 Server Error: Service Unavailable for url: https://centralnovel.com/series/the-beginning-after-the-end/
+Traceback (most recent call last):
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\routes\book_routes.py", line 55, in generate_epub
+    result_buffer = scraper.create_epub_buffer()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\base_book.py", line 62, in create_epub_buffer
+    raise e
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\base_book.py", line 59, in create_epub_buffer
+    metadata = self.get_book_metadata()
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 54, in get_book_metadata
+    raise e
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 28, in get_book_metadata
+    response.raise_for_status()
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 503 Server Error: Service Unavailable for url: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:44:56 | INFO     | 🚀 Initializing EPUB generation | URL: https://centralnovel.com/series/the-beginning-after-the-end/ | Qty: 530 | Start: 1
+2026-01-05 18:44:56 | INFO     | [CentralNovelService] Instantiating MyCentralNovelBook for URL: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:44:56 | INFO     | [MyCentralNovelBook] Starting EPUB generation for: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:44:56 | INFO     | [MyCentralNovelBook] Fetching metadata from: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:44:57 | ERROR    | [MyCentralNovelBook] Failed to get metadata: 403 Client Error: Forbidden for url: https://centralnovel.com/series/the-beginning-after-the-end/
+Traceback (most recent call last):
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 28, in get_book_metadata
+    response.raise_for_status()
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:44:57 | ERROR    | [MyCentralNovelBook] Critical failure fetching metadata: 403 Client Error: Forbidden for url: https://centralnovel.com/series/the-beginning-after-the-end/
+Traceback (most recent call last):
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\base_book.py", line 59, in create_epub_buffer
+    metadata = self.get_book_metadata()
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 54, in get_book_metadata
+    raise e
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 28, in get_book_metadata
+    response.raise_for_status()
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://centralnovel.com/series/the-beginning-after-the-end/
+2026-01-05 18:44:57 | ERROR    | ❌ Generation failed for https://centralnovel.com/series/the-beginning-after-the-end/: 403 Client Error: Forbidden for url: https://centralnovel.com/series/the-beginning-after-the-end/
+Traceback (most recent call last):
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\routes\book_routes.py", line 55, in generate_epub
+    result_buffer = scraper.create_epub_buffer()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\base_book.py", line 62, in create_epub_buffer
+    raise e
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\base_book.py", line 59, in create_epub_buffer
+    metadata = self.get_book_metadata()
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 54, in get_book_metadata
+    raise e
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\src\classes\centralnovel_book.py", line 28, in get_book_metadata
+    response.raise_for_status()
+  File "C:\Users\fport\OneDrive\Desktop\Coding\projetos\webnovel-to-epub\venv\Lib\site-packages\requests\models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://centralnovel.com/series/the-beginning-after-the-end/

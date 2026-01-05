@@ -1,0 +1,45 @@
+from pydantic import BaseModel, HttpUrl, Field
+from typing import List, Optional
+
+# --- SEARCH SCHEMAS ---
+
+class NovelSearchResult(BaseModel):
+    """Schema for a single novel search result item."""
+    title: str = Field(..., example="Shadow Slave")
+    url: str = Field(..., example="https://royalroad.com/fiction/12345/novel")
+    cover: Optional[str] = Field(None, example="https://cdn.com/cover.jpg")
+    chapters_count: Optional[str] = Field("N/A", example="1500 Chapters")
+
+
+class SearchResponse(BaseModel):
+    """Schema for the complete search response."""
+    source: str
+    results_count: int
+    results: List[NovelSearchResult]
+
+
+# --- DOWNLOAD / EPUB SCHEMAS ---
+
+class EpubRequest(BaseModel):
+    """
+    Schema for EPUB generation request. 
+    Useful if you decide to change from GET to POST later.
+    """
+    url: HttpUrl
+    qty: int = Field(default=1, ge=1, le=500, description="Quantity of chapters to download")
+    start: int = Field(default=1, ge=1, description="Starting chapter number")
+
+
+class BookMetadata(BaseModel):
+    """Schema for the book metadata extracted before/during generation."""
+    book_title: str
+    book_author: str
+    book_description: str
+    book_cover_link: Optional[str] = None
+
+
+# --- ERROR SCHEMAS ---
+
+class ErrorMessage(BaseModel):
+    """Standardized error message schema."""
+    detail: str

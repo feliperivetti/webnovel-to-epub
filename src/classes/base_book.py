@@ -1,6 +1,4 @@
-import io
-import time
-import random
+import io, os, random, time
 import cloudscraper
 import concurrent.futures
 from abc import ABC, abstractmethod
@@ -27,11 +25,17 @@ class MyBook(ABC):
                 'desktop': True
             }
         )
-        
-        # Maintaining your custom User-Agent for extra safety
-        self._session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-        })
+
+        # Proxy configuration via Environment Variable
+        proxy_url = os.environ.get("PROXY_URL")
+        if proxy_url:
+            self._session.proxies = {
+                "http": proxy_url,
+                "https": proxy_url
+            }
+            logger.info(f"[{self.class_name}] Proxy enabled from environment.")
+        else:
+            logger.warning(f"[{self.class_name}] No proxy detected. Using direct server IP.")
         
         self.book_title = "Unknown Title"
         logger.debug(f"[{self.class_name}] Instance initialized for: {main_url}")

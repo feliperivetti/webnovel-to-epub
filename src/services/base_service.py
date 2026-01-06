@@ -1,3 +1,4 @@
+import os
 import cloudscraper
 from abc import ABC, abstractmethod
 from src.utils.logger import logger
@@ -14,7 +15,6 @@ class BaseService(ABC):
         self.service_name = self.__class__.__name__
         
         # Shared session using cloudscraper to bypass Cloudflare/Wordfence.
-        # It ensures all requests from a service instance use the same headers.
         self.session = cloudscraper.create_scraper(
             browser={
                 'browser': 'chrome',
@@ -22,12 +22,18 @@ class BaseService(ABC):
                 'desktop': True
             }
         )
+
+        # Proxy configuration via Environment Variable
+        proxy_url = os.environ.get("PROXY_URL")
+        if proxy_url:
+            self.session.proxies = {
+                "http": proxy_url,
+                "https": proxy_url
+            }
+            logger.info(f"[{self.service_name}] Proxy enabled for search service.")
+        else:
+            logger.warning(f"[{self.service_name}] No proxy detected for search. Using direct IP.")
         
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-        })
-        
-        # Depuration log to confirm the service was created successfully
         logger.debug(f"[{self.service_name}] Cloudscraper session initialized.")
 
     @abstractmethod

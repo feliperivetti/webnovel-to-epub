@@ -1,0 +1,33 @@
+# Ambientes virtuais (NUNCA leve para o Docker)
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Logs e Saídas (Você quer que o container crie os dele)
+logs/
+outputs/
+*.log
+*.epub
+
+# Configurações locais e segredos
+.env
+.vscode/
+.idea/
+
+# Documentação e Git
+.git/
+.gitignore
+README.md
+docs/
+
+# Arquivos de sistema (Lixo do Windows/Mac)
+Thumbs.db
+.DS_Store

@@ -1,6 +1,7 @@
-import requests
+import cloudscraper
 from abc import ABC, abstractmethod
 from src.utils.logger import logger
+
 
 class BaseService(ABC):
     """
@@ -9,18 +10,25 @@ class BaseService(ABC):
     """
     
     def __init__(self):
-        # Nome da classe filha para logs mais precisos (ex: RoyalRoadService)
+        # Child class name for precise logging (e.g., RoyalRoadService)
         self.service_name = self.__class__.__name__
         
-        # Shared session ensures all requests from a service instance 
-        # use the same headers and connection pool.
-        self.session = requests.Session()
+        # Shared session using cloudscraper to bypass Cloudflare/Wordfence.
+        # It ensures all requests from a service instance use the same headers.
+        self.session = cloudscraper.create_scraper(
+            browser={
+                'browser': 'chrome',
+                'platform': 'windows',
+                'desktop': True
+            }
+        )
+        
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         })
         
-        # Log de depuração para confirmar que o serviço foi criado corretamente
-        logger.debug(f"[{self.service_name}] Session initialized with shared headers.")
+        # Depuration log to confirm the service was created successfully
+        logger.debug(f"[{self.service_name}] Cloudscraper session initialized.")
 
     @abstractmethod
     def search(self, query: str) -> list:

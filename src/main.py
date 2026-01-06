@@ -1,5 +1,4 @@
 import time
-import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from src.routes import book_routes, search_routes
@@ -56,4 +55,11 @@ def health_check():
     }
 
 if __name__ == "__main__":
-    uvicorn.run("src.main:app", host="127.0.0.1", port=8000, reload=True)
+    import uvicorn
+    import os
+
+    # Pega a porta da variável de ambiente (o Render/Railway define isso automaticamente)
+    # Se não houver, usa a 8000 como padrão
+    port = int(os.environ.get("PORT", 8000))
+    
+    uvicorn.run("src.main:app", host="0.0.0.0", port=port, reload=True)

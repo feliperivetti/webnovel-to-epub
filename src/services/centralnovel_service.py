@@ -15,37 +15,55 @@ class CentralNovelService(BaseService):
 
     def search(self, query: str) -> list:
         """
-        Searches for novels using the standard WordPress query.
-        Uses the inherited session from BaseService.
+        Performs a novel search using a session warm-up technique to bypass 403 Forbidden errors.
+        It first visits the Home Page to establish cookies and pass initial security checks.
         """
+        import random
+        import time
+
         search_url = f"{self.BASE_URL}/"
         params = {'s': query.strip()}
         
-        # Simulando que a busca veio da página inicial
+        # Comprehensive headers to simulate a real web browser
         headers = {
-            "Referer": f"{self.BASE_URL}/"
+            "Referer": f"{self.BASE_URL}/",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Upgrade-Insecure-Requests": "1",
+            "Cache-Control": "max-age=0"
         }
         
-        logger.info(f"[{self.service_name}] Searching for novels with query: '{query}'")
-        
         try:
-            # Passando os headers manualmente para enganar o firewall do CentralNovel
+            # 1. SESSION WARM-UP
+            # Check if session cookies are empty. If so, "step" on the home page first.
+            if not self.session.cookies:
+                logger.info(f"[{self.service_name}] New session detected. Performing warm-up on Home Page...")
+                warmup_response = self.session.get(self.BASE_URL, timeout=10)
+                warmup_response.raise_for_status()
+                
+                # Human-like random delay (between 1.5 to 3.5 seconds)
+                time.sleep(random.uniform(1.5, 3.5))
+
+            logger.info(f"[{self.service_name}] Searching for novels with query: '{query}'")
+
+            # 2. ACTUAL SEARCH REQUEST
+            # The session now carries valid cookies and the Referer simulates a legitimate origin
             response = self.session.get(
                 search_url, 
                 params=params, 
                 headers=headers, 
-                timeout=10
+                timeout=15
             )
             response.raise_for_status()
             
             soup = BeautifulSoup(response.text, 'html.parser')
             results = []
             
-            # Buscando o container dos artigos
+            # Locate article containers (Commonly used in WordPress/Madara themes)
             articles = soup.find_all('article', class_='maindet')
             
             if not articles:
-                logger.warning(f"[{self.service_name}] No articles found for query: '{query}'. The site layout might have changed or no results exist.")
+                logger.warning(f"[{self.service_name}] No articles found for query: '{query}'. Layout might have changed or no results exist.")
                 return []
 
             for article in articles:
@@ -55,18 +73,22 @@ class CentralNovelService(BaseService):
                 chapter_span = article.find('span', class_='nchapter')
 
                 if title_tag and link_tag:
+                    # Check for data-src first (common in lazy-loading setups), fallback to src
+                    cover_url = img_tag.get('data-src') or img_tag.get('src') if img_tag else None
+                    
                     results.append({
                         "title": title_tag.get_text(strip=True),
                         "url": link_tag.get('href'),
-                        "cover": img_tag.get('src') if img_tag else None,
+                        "cover": cover_url,
                         "chapters_count": chapter_span.get_text(strip=True) if chapter_span else "N/A"
                     })
             
-            logger.info(f"[{self.service_name}] Found {len(results)} results for '{query}'")
+            logger.info(f"[{self.service_name}] Successfully found {len(results)} results for '{query}'")
             return results
             
         except Exception as e:
-            logger.error(f"[{self.service_name}] Search error for query '{query}': {str(e)}", exc_info=True)
+            # Error logging with traceback information
+            logger.error(f"[{self.service_name}] Search failed for query '{query}': {str(e)}", exc_info=True)
             return []
 
     def get_book_instance(self, url: str, qty: int, start: int) -> MyCentralNovelBook:

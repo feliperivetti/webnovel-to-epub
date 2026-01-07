@@ -119,7 +119,6 @@ class MyBook(ABC):
                 logger.warning(f"[{self.class_name}] Failed to set cover image: {e}")
 
         # 4. Create Essential Pages
-        # 4.1 Synopsis
         desc_page = epub.EpubHtml(title=EPUB_STRINGS["synopsis_title"], file_name='synopsis.xhtml', lang='en')
         desc_page.set_content(EPUB_HTML_TEMPLATE.format(
             title=EPUB_STRINGS["synopsis_title"],
@@ -127,7 +126,6 @@ class MyBook(ABC):
         ).encode('utf-8'))
         book.add_item(desc_page)
 
-        # 4.2 Disclaimer
         disclaimer_page = epub.EpubHtml(title=EPUB_STRINGS["disclaimer_title"], file_name='disclaimer.xhtml', lang='en')
         disclaimer_page.set_content(EPUB_HTML_TEMPLATE.format(
             title=EPUB_STRINGS["disclaimer_title"],
@@ -135,17 +133,23 @@ class MyBook(ABC):
         ).encode('utf-8'))
         book.add_item(disclaimer_page)
 
-        # 5. Parallel Chapter Download
+        # 5. Parallel Chapter Download with Progress Milestones
         chapters_data_results = [None] * total_to_download
-        logger.info(f"[{self.class_name}] Starting parallel download of {total_to_download} chapters with {API_CONFIG['MAX_WORKERS']} workers.")
+        logger.info(f"[{self.class_name}] Starting parallel download: {total_to_download} chapters | Workers: {API_CONFIG['MAX_WORKERS']}")
         
+        completed_count = 0
         errors_count = 0 
+
+        # Define os marcos de progresso (ex: a cada 10%)
+        # Usamos um set para evitar duplicatas e garantir busca O(1)
+        checkpoints = {max(1, int(total_to_download * (i / 10))) for i in range(1, 11)}
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=API_CONFIG["MAX_WORKERS"]) as executor:
             future_to_index = {
                 executor.submit(self._fetch_with_retry, url): i 
                 for i, url in enumerate(chapter_urls)
             }
+            
             for future in concurrent.futures.as_completed(future_to_index):
                 index = future_to_index[future]
                 try:
@@ -157,12 +161,18 @@ class MyBook(ABC):
                         'chapter_title': f'Error Chapter {index+1}', 
                         'main_content': EPUB_STRINGS["error_content"]
                     }
+                
+                # Incrementa o contador e verifica se atingiu um marco
+                completed_count += 1
+                if completed_count in checkpoints or completed_count == total_to_download:
+                    percentage = (completed_count / total_to_download) * 100
+                    logger.info(f"[{self.class_name}] Progress: {percentage:.0f}% ({completed_count}/{total_to_download})")
 
         # FINAL SUMMARY LOG
         if errors_count == 0:
-            logger.info(f"[{self.class_name}] Successfully downloaded chapters.")
+            logger.info(f"[{self.class_name}] All chapters downloaded successfully.")
         else:
-            logger.warning(f"[{self.class_name}] Finished download with {errors_count} errors.")
+            logger.warning(f"[{self.class_name}] Download finished with {errors_count} errors.")
 
         # 6. Assemble EPUB Structure
         epub_chapters = []
@@ -171,8 +181,6 @@ class MyBook(ABC):
             
             title = to_str(data.get('chapter_title', f'Chapter {i + 1}'))
             content_node = data.get('main_content')
-            
-            # Extract HTML content from BeautifulSoup node or string
             raw_html = content_node.decode_contents() if hasattr(content_node, 'decode_contents') else str(content_node)
 
             chapter = epub.EpubHtml(title=title, file_name=f'chap_{i + 1}.xhtml', lang='en')

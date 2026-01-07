@@ -2,7 +2,7 @@
 API_CONFIG = {
     "MAX_CHAPTERS_LIMIT": 1000,
     "DEFAULT_TIMEOUT": 15,
-    "MAX_WORKERS": 1,  # Recommended between 2 and 5 to avoid IP bans    
+    "MAX_WORKERS": 2,  # Recommended between 2 and 5 to avoid IP bans    
 }
 
 # --- HTML Templates for EPUB pages ---

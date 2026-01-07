@@ -21,11 +21,21 @@ class CentralNovelService(BaseService):
         search_url = f"{self.BASE_URL}/"
         params = {'s': query.strip()}
         
+        # Simulando que a busca veio da página inicial
+        headers = {
+            "Referer": f"{self.BASE_URL}/"
+        }
+        
         logger.info(f"[{self.service_name}] Searching for novels with query: '{query}'")
         
         try:
-            # Realizando a requisição via sessão herdada
-            response = self.session.get(search_url, params=params, timeout=10)
+            # Passando os headers manualmente para enganar o firewall do CentralNovel
+            response = self.session.get(
+                search_url, 
+                params=params, 
+                headers=headers, 
+                timeout=10
+            )
             response.raise_for_status()
             
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -56,7 +66,6 @@ class CentralNovelService(BaseService):
             return results
             
         except Exception as e:
-            # exc_info=True salvará o rastro completo do erro no arquivo app.log
             logger.error(f"[{self.service_name}] Search error for query '{query}': {str(e)}", exc_info=True)
             return []
 

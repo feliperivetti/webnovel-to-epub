@@ -3,7 +3,11 @@ import os
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from src.routes import book_routes, search_routes
+
+# --- LOAD ENVIRONMENT VARIABLES ---
+load_dotenv()
 
 # Initialize the FastAPI application with professional metadata
 app = FastAPI(
@@ -13,8 +17,6 @@ app = FastAPI(
 )
 
 # --- CORS CONFIGURATION ---
-# "allow_origins=['*']" permite que qualquer frontend (React, Vue, etc.) se conecte à sua API.
-# Perfeito para desenvolvimento e deploy inicial.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -54,5 +56,5 @@ def health_check():
 if __name__ == "__main__":
     # Garante que a porta seja dinâmica para o Render e o host seja 0.0.0.0 para o Docker
     port = int(os.environ.get("PORT", 8000))
+    # Importante: ao usar uvicorn.run com string "src.main:app", o reload funciona melhor em desenvolvimento
     uvicorn.run("src.main:app", host="0.0.0.0", port=port, reload=True)
-    

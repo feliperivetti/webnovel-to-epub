@@ -1,3 +1,5 @@
+import random
+import time
 from bs4 import BeautifulSoup
 from src.services.base_service import BaseService
 from src.classes.centralnovel_book import MyCentralNovelBook
@@ -15,55 +17,66 @@ class CentralNovelService(BaseService):
 
     def search(self, query: str) -> list:
         """
-        Performs a novel search using a session warm-up technique to bypass 403 Forbidden errors.
-        It first visits the Home Page to establish cookies and pass initial security checks.
+        Performs a novel search using an advanced session warm-up technique 
+        and stealth headers to bypass 403 Forbidden errors on hosted environments.
         """
-        import random
-        import time
-
         search_url = f"{self.BASE_URL}/"
         params = {'s': query.strip()}
         
-        # Comprehensive headers to simulate a real web browser
+        # Enhanced stealth headers to mimic a real Chrome 120+ browser
+        # Note: 'User-Agent' is handled by cloudscraper, but we ensure consistency here
         headers = {
             "Referer": f"{self.BASE_URL}/",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br", # Brotli is essential for stealth
+            "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
-            "Cache-Control": "max-age=0"
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-User": "?1",
         }
         
         try:
-            # 1. SESSION WARM-UP
-            # Check if session cookies are empty. If so, "step" on the home page first.
+            # 1. ADVANCED SESSION WARM-UP
+            # If the hosted environment is flagged, clearing cookies can sometimes help start fresh
             if not self.session.cookies:
-                logger.info(f"[{self.service_name}] New session detected. Performing warm-up on Home Page...")
+                logger.info(f"[{self.service_name}] Initializing fresh session warm-up for Central Novel...")
+                # First visit: Just the root domain to get security cookies
                 warmup_response = self.session.get(self.BASE_URL, timeout=10)
                 warmup_response.raise_for_status()
                 
-                # Human-like random delay (between 1.5 to 3.5 seconds)
-                time.sleep(random.uniform(1.5, 3.5))
+                # Human-like random delay before searching
+                delay = random.uniform(2.0, 4.5)
+                logger.debug(f"[{self.service_name}] Warm-up successful. Waiting {delay:.2f}s before search.")
+                time.sleep(delay)
 
-            logger.info(f"[{self.service_name}] Searching for novels with query: '{query}'")
+            logger.info(f"[{self.service_name}] Executing search request for: '{query}'")
 
-            # 2. ACTUAL SEARCH REQUEST
-            # The session now carries valid cookies and the Referer simulates a legitimate origin
+            # 2. SEARCH REQUEST WITH STEALTH HEADERS
             response = self.session.get(
                 search_url, 
                 params=params, 
                 headers=headers, 
                 timeout=15
             )
+
+            # Fallback for 403 on hosted environment
+            if response.status_code == 403:
+                logger.error(f"[{self.service_name}] 403 Forbidden detected on Render. Cloudflare may have flagged the JA3 fingerprint.")
+                return []
+
             response.raise_for_status()
             
             soup = BeautifulSoup(response.text, 'html.parser')
             results = []
             
-            # Locate article containers (Commonly used in WordPress/Madara themes)
+            # Identify WordPress 'Madara' or 'Maindet' article containers
             articles = soup.find_all('article', class_='maindet')
             
             if not articles:
-                logger.warning(f"[{self.service_name}] No articles found for query: '{query}'. Layout might have changed or no results exist.")
+                logger.warning(f"[{self.service_name}] No articles found for: '{query}'. Site may have blocked the response content.")
                 return []
 
             for article in articles:
@@ -73,7 +86,7 @@ class CentralNovelService(BaseService):
                 chapter_span = article.find('span', class_='nchapter')
 
                 if title_tag and link_tag:
-                    # Check for data-src first (common in lazy-loading setups), fallback to src
+                    # data-src is preferred due to lazy loading patterns
                     cover_url = img_tag.get('data-src') or img_tag.get('src') if img_tag else None
                     
                     results.append({
@@ -83,18 +96,17 @@ class CentralNovelService(BaseService):
                         "chapters_count": chapter_span.get_text(strip=True) if chapter_span else "N/A"
                     })
             
-            logger.info(f"[{self.service_name}] Successfully found {len(results)} results for '{query}'")
+            logger.info(f"[{self.service_name}] Successfully retrieved {len(results)} results.")
             return results
             
         except Exception as e:
-            # Error logging with traceback information
-            logger.error(f"[{self.service_name}] Search failed for query '{query}': {str(e)}", exc_info=True)
+            logger.error(f"[{self.service_name}] Search process failed: {str(e)}", exc_info=True)
             return []
 
     def get_book_instance(self, url: str, qty: int, start: int) -> MyCentralNovelBook:
         """
         Returns a specialized book instance for Central Novel.
         """
-        logger.info(f"[{self.service_name}] Instantiating MyCentralNovelBook for URL: {url}")
+        logger.info(f"[{self.service_name}] Creating book instance for: {url}")
         return MyCentralNovelBook(url, qty, start)
     

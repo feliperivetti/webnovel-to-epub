@@ -1,10 +1,12 @@
 import time
 import os
 import uvicorn
+import requests
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from src.routes import book_routes, search_routes
+from src.utils.logger import logger
 
 # --- LOAD ENVIRONMENT VARIABLES ---
 load_dotenv()
@@ -53,8 +55,43 @@ def health_check():
         "docs": "/docs"
     }
 
+# --- DEBUG PROXY ROUTE ---
+@app.get("/debug-proxy", tags=["Debug"])
+def debug_proxy():
+    """
+    Check which IP address is being used by the server. 
+    Helps verify if the PROXY_URL is correctly applied on Render.
+    """
+    proxy_url = os.environ.get("PROXY_URL")
+    proxies = {
+        "http": proxy_url,
+        "https": proxy_url
+    } if proxy_url else None
+
+    debug_data = {
+        "proxy_configured": bool(proxy_url),
+        "proxy_url_masked": f"{proxy_url[:15]}...{proxy_url[-5:]}" if proxy_url else None,
+        "server_ip_check": "Checking...",
+        "error": None
+    }
+
+    try:
+        # We use a 3rd party API to see our outgoing IP
+        response = requests.get(
+            "https://api.ipify.org?format=json", 
+            proxies=proxies, 
+            timeout=10
+        )
+        debug_data["server_ip_check"] = response.json().get("ip")
+    except Exception as e:
+        logger.error(f"[Debug] Proxy check failed: {e}")
+        debug_data["server_ip_check"] = "Failed"
+        debug_data["error"] = str(e)
+
+    return debug_data
+
 if __name__ == "__main__":
-    # Garante que a porta seja dinâmica para o Render e o host seja 0.0.0.0 para o Docker
+    # Ensure port is dynamic for Render and host is 0.0.0.0 for Docker
     port = int(os.environ.get("PORT", 8000))
-    # Importante: ao usar uvicorn.run com string "src.main:app", o reload funciona melhor em desenvolvimento
     uvicorn.run("src.main:app", host="0.0.0.0", port=port, reload=True)
+    

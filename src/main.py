@@ -90,8 +90,16 @@ def debug_proxy():
 
     return debug_data
 
+@app.get("/debug-headers")
+def debug_headers():
+    import requests
+    proxy = os.environ.get("PROXY_URL")
+    proxies = {"http": proxy, "https": proxy}
+    # Esse site retorna todos os headers que você enviou
+    res = requests.get("https://httpbin.org/headers", proxies=proxies)
+    return res.json()
+
 if __name__ == "__main__":
     # Ensure port is dynamic for Render and host is 0.0.0.0 for Docker
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("src.main:app", host="0.0.0.0", port=port, reload=True)
-    

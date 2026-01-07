@@ -92,11 +92,17 @@ def debug_proxy():
 
 @app.get("/debug-headers")
 def debug_headers():
-    import requests
+    import cloudscraper
     proxy = os.environ.get("PROXY_URL")
     proxies = {"http": proxy, "https": proxy}
-    # Esse site retorna todos os headers que você enviou
-    res = requests.get("https://httpbin.org/headers", proxies=proxies)
+    
+    # Usando cloudscraper com os mesmos headers do seu service
+    scraper = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
+    
+    # Vamos forçar um User-Agent real aqui também
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+    
+    res = scraper.get("https://httpbin.org/headers", proxies=proxies, headers=headers)
     return res.json()
 
 if __name__ == "__main__":

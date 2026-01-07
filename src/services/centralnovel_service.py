@@ -12,18 +12,17 @@ class CentralNovelService(BaseService):
     """
     BASE_URL = "https://centralnovel.com"
     
-    # Real Browser User-Agents to bypass fingerprinting
+    # Professional Real Browser User-Agents (Chrome 120+)
     REAL_USER_AGENTS = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0"
     ]
 
     def __init__(self):
         super().__init__()
-        # Force the cloudscraper to use a specific browser configuration
-        # This helps in aligning the TLS fingerprint with the User-Agent
+        # Ensure the session starts with a clean Slate mimicking a Windows Desktop
         self.session.browser = {
             'browser': 'chrome',
             'platform': 'windows',
@@ -32,22 +31,20 @@ class CentralNovelService(BaseService):
 
     def search(self, query: str) -> list:
         """
-        Performs a novel search using an advanced session warm-up technique,
-        randomized User-Agents, and stealth headers to bypass 403 Forbidden errors.
+        Performs a novel search using session warm-up, randomized UAs, 
+        and header sanitization to bypass cloudflare blocks on hosted environments.
         """
         search_url = f"{self.BASE_URL}/"
         params = {'s': query.strip()}
-        
-        # Select a random real User-Agent for this specific request
         current_ua = random.choice(self.REAL_USER_AGENTS)
         
-        # Enhanced stealth headers to mimic a real Chrome browser
+        # Comprehensive headers mimicking a modern browser
         headers = {
             "User-Agent": current_ua,
-            "Referer": f"{self.BASE_URL}/",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Language": "en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7",
             "Accept-Encoding": "gzip, deflate, br",
+            "Referer": f"{self.BASE_URL}/",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
             "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
@@ -58,23 +55,24 @@ class CentralNovelService(BaseService):
             "Sec-Fetch-Site": "same-origin",
             "Sec-Fetch-User": "?1",
         }
+
+        # SANITIZATION: Remove any headers that identify the Render/AWS infrastructure
+        # This is crucial for avoiding 403 blocks on PaaS.
+        for header in ['X-Amzn-Trace-Id', 'Via', 'X-Forwarded-For', 'X-Real-Ip']:
+            self.session.headers.pop(header, None)
         
         try:
-            # 1. SESSION WARM-UP
-            # Accessing the root domain first helps establish valid cookies and bypass Cloudflare
-            if not self.session.cookies:
-                logger.info(f"[{self.service_name}] Initializing fresh session warm-up for Central Novel...")
-                warmup_response = self.session.get(self.BASE_URL, headers={"User-Agent": current_ua}, timeout=15)
-                warmup_response.raise_for_status()
-                
-                # Human-like random delay
-                delay = random.uniform(2.0, 4.0)
-                logger.debug(f"[{self.service_name}] Warm-up successful. Waiting {delay:.2f}s before search.")
-                time.sleep(delay)
+            # 1. FORCED SESSION WARM-UP (Crucial for establishing cookies)
+            # Even if cookies exist, a quick hit to home with the specific UA helps
+            logger.info(f"[{self.service_name}] Warming up session for: {current_ua[:30]}...")
+            self.session.get(self.BASE_URL, headers={"User-Agent": current_ua}, timeout=15)
+            
+            # Random wait to simulate human reading time
+            time.sleep(random.uniform(2.5, 5.0))
 
-            logger.info(f"[{self.service_name}] Executing search request for: '{query}'")
+            logger.info(f"[{self.service_name}] Executing search for: '{query}'")
 
-            # 2. ACTUAL SEARCH REQUEST
+            # 2. SEARCH REQUEST
             response = self.session.get(
                 search_url, 
                 params=params, 
@@ -82,9 +80,8 @@ class CentralNovelService(BaseService):
                 timeout=20
             )
 
-            # Check for Cloudflare/Server block
             if response.status_code == 403:
-                logger.error(f"[{self.service_name}] 403 Forbidden. Target site is blocking the Render environment.")
+                logger.error(f"[{self.service_name}] 403 Forbidden - Fingerprint rejected by Central Novel.")
                 return []
 
             response.raise_for_status()
@@ -92,11 +89,11 @@ class CentralNovelService(BaseService):
             soup = BeautifulSoup(response.text, 'html.parser')
             results = []
             
-            # Identify article containers (Standard WordPress/Madara theme structure)
+            # Select articles from the search results
             articles = soup.find_all('article', class_='maindet')
             
             if not articles:
-                logger.warning(f"[{self.service_name}] No articles found for: '{query}'. Site may have hidden the content.")
+                logger.warning(f"[{self.service_name}] No results found for '{query}'.")
                 return []
 
             for article in articles:
@@ -106,7 +103,7 @@ class CentralNovelService(BaseService):
                 chapter_span = article.find('span', class_='nchapter')
 
                 if title_tag and link_tag:
-                    # Preference for data-src due to lazy loading patterns
+                    # Handle lazy-loaded images (common in WordPress)
                     cover_url = img_tag.get('data-src') or img_tag.get('src') if img_tag else None
                     
                     results.append({
@@ -116,7 +113,7 @@ class CentralNovelService(BaseService):
                         "chapters_count": chapter_span.get_text(strip=True) if chapter_span else "N/A"
                     })
             
-            logger.info(f"[{self.service_name}] Successfully found {len(results)} results.")
+            logger.info(f"[{self.service_name}] Found {len(results)} results.")
             return results
             
         except Exception as e:
@@ -127,6 +124,5 @@ class CentralNovelService(BaseService):
         """
         Returns a specialized book instance for Central Novel.
         """
-        logger.info(f"[{self.service_name}] Creating book instance for: {url}")
+        logger.info(f"[{self.service_name}] Instantiating book for URL: {url}")
         return MyCentralNovelBook(url, qty, start)
-    

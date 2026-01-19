@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from src.services.centralnovel_service import CentralNovelService
+from src.services.novelsbr_service import NovelsBrService
 from src.services.pandanovel_service import PandaNovelService
 from src.services.royalroad_service import RoyalRoadService
 
@@ -28,10 +29,11 @@ def generate_epub(
     
     # 1. Map domains to Service Classes
     providers = {
-        "royalroad.com": RoyalRoadService,
         "centralnovel.com": CentralNovelService,
+        "novels-br.com": NovelsBrService,
         "pandanovel.co": PandaNovelService,
-        "novelfire.net": PandaNovelService
+        "novelfire.net": PandaNovelService,
+        "royalroad.com": RoyalRoadService
     }
 
     # 2. Identify the correct provider

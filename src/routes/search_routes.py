@@ -4,6 +4,7 @@ from src.schemas.novel_schema import SearchResponse
 from src.utils.logger import logger
 
 from src.services.centralnovel_service import CentralNovelService
+from src.services.novelsbr_service import NovelsBrService
 from src.services.pandanovel_service import PandaNovelService
 from src.services.royalroad_service import RoyalRoadService
 
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/search", tags=["Search"])
 
 @router.get("/", response_model=SearchResponse)
 def search_novel(
-    source: str = Query(..., description="The source site (royal, panda, central)"),
+    source: str = Query(..., description="The source site (royal, panda, novelsbr, central)"),
     query: str = Query(..., min_length=2, description="The search term")
 ):
     """
@@ -27,9 +28,10 @@ def search_novel(
     
     # Mapping sources to their respective CLASSES
     providers = {
-        "royal": RoyalRoadService,
+        "central": CentralNovelService,
+        "novelsbr": NovelsBrService,
         "panda": PandaNovelService,
-        "central": CentralNovelService
+        "royal": RoyalRoadService,
     }
 
     # Validation for supported sources

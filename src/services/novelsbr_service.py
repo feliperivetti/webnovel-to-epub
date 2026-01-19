@@ -30,7 +30,7 @@ class NovelsBrService(BaseService):
             response = self._session.get(
                 self.SEARCH_URL, 
                 params=params, 
-                timeout=30
+                timeout=10
             )
             response.raise_for_status()
             response.encoding = 'utf-8'

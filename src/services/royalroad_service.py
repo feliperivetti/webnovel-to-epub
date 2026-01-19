@@ -25,7 +25,7 @@ class RoyalRoadService(BaseService):
         
         try:
             # Requisição via sessão compartilhada
-            response = self.session.get(search_url, params=params, timeout=10)
+            response = self._session.get(search_url, params=params, timeout=10)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.text, 'html.parser')

@@ -23,7 +23,7 @@ class PandaNovelService(BaseService):
         
         try:
             # Requisição usando a sessão da BaseService
-            response = self.session.get(
+            response = self._session.get(
                 self.SEARCH_URL, 
                 params=params, 
                 timeout=10

@@ -27,7 +27,7 @@ class NovelsBrService(BaseService):
         
         try:
             # Request using the session from BaseService
-            response = self.session.get(
+            response = self._session.get(
                 self.SEARCH_URL, 
                 params=params, 
                 timeout=10

@@ -23,7 +23,7 @@ class CentralNovelService(BaseService):
     def __init__(self):
         super().__init__()
         # Ensure the session starts with a clean Slate mimicking a Windows Desktop
-        self.session.browser = {
+        self._session.browser = {
             'browser': 'chrome',
             'platform': 'windows',
             'desktop': True
@@ -59,13 +59,13 @@ class CentralNovelService(BaseService):
         # SANITIZATION: Remove any headers that identify the Render/AWS infrastructure
         # This is crucial for avoiding 403 blocks on PaaS.
         for header in ['X-Amzn-Trace-Id', 'Via', 'X-Forwarded-For', 'X-Real-Ip']:
-            self.session.headers.pop(header, None)
+            self._session.headers.pop(header, None)
         
         try:
             # 1. FORCED SESSION WARM-UP (Crucial for establishing cookies)
             # Even if cookies exist, a quick hit to home with the specific UA helps
             logger.info(f"[{self.service_name}] Warming up session for: {current_ua[:30]}...")
-            self.session.get(self.BASE_URL, headers={"User-Agent": current_ua}, timeout=15)
+            self._session.get(self.BASE_URL, headers={"User-Agent": current_ua}, timeout=15)
             
             # Random wait to simulate human reading time
             time.sleep(random.uniform(2.5, 5.0))
@@ -73,7 +73,7 @@ class CentralNovelService(BaseService):
             logger.info(f"[{self.service_name}] Executing search for: '{query}'")
 
             # 2. SEARCH REQUEST
-            response = self.session.get(
+            response = self._session.get(
                 search_url, 
                 params=params, 
                 headers=headers, 

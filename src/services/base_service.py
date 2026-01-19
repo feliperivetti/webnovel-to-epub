@@ -19,7 +19,7 @@ class BaseService(ABC):
         self.service_name = self.__class__.__name__
         
         # Shared session using cloudscraper to bypass Cloudflare/Wordfence.
-        self.session = cloudscraper.create_scraper(
+        self._session = cloudscraper.create_scraper(
             browser={
                 'browser': 'chrome',
                 'platform': 'windows',
@@ -30,7 +30,7 @@ class BaseService(ABC):
         # Proxy configuration via Environment Variable
         proxy_url = os.environ.get("PROXY_URL")
         if proxy_url:
-            self.session.proxies = {
+            self._session.proxies = {
                 "http": proxy_url,
                 "https": proxy_url
             }

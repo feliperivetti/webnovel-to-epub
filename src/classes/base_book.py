@@ -2,6 +2,7 @@ import io, os, random, time
 import cloudscraper
 import concurrent.futures
 from abc import ABC, abstractmethod
+from dotenv import load_dotenv
 from ebooklib import epub
 
 from src.utils.constants import API_CONFIG, EPUB_HTML_TEMPLATE, EPUB_STRINGS
@@ -10,6 +11,9 @@ from src.utils.logger import logger
 
 class MyBook(ABC):
     def __init__(self, main_url: str, chapters_quantity: int, start_chapter: int):
+        # Load variables from .env file into os.environ
+        load_dotenv()
+        
         self._main_url = main_url
         self._chapters_quantity = chapters_quantity
         self._start_chapter = start_chapter

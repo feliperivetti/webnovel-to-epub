@@ -1,6 +1,7 @@
 import os
 import cloudscraper
 from abc import ABC, abstractmethod
+from dotenv import load_dotenv
 from src.utils.logger import logger
 
 
@@ -11,6 +12,9 @@ class BaseService(ABC):
     """
     
     def __init__(self):
+        # Load variables from .env file into os.environ
+        load_dotenv()
+
         # Child class name for precise logging (e.g., RoyalRoadService)
         self.service_name = self.__class__.__name__
         

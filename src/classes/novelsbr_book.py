@@ -1,26 +1,32 @@
-import re
 import time
 from bs4 import BeautifulSoup
 from src.classes.base_book import MyBook
 from src.utils.logger import logger
 
 class MyNovelsBrBook(MyBook):
+    """
+    Scraper implementation for Novels-BR books.
+    Handles metadata extraction and chapter list navigation within accordion menus.
+    """
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         
-        # Selectors using CSS syntax for select_one
+        # Selectors using CSS syntax for select/select_one
         self._selectors = {
             'meta_header': 'section.navbar-novel',
             'meta_title': 'h1.mb-0',
             'meta_info': 'div#hero-novel',
             'meta_description': 'p[style*="text-align: justify"]',
-            'meta_chapter_list_all': 'div.row.mt-3',
+            'meta_chapter_list_all': 'div#volumes',
             
             'chap_title': 'h2.chapter-title',
             'chap_content': 'div.chapter-content'
         }
         
     def get_book_metadata(self) -> dict:
+        """
+        Extracts book title, author, description, and cover image from the main page.
+        """
         logger.info(f"[{self.class_name}] Fetching metadata from: {self._main_url}")
         
         try:
@@ -29,39 +35,38 @@ class MyNovelsBrBook(MyBook):
             response.encoding = 'utf-8'
             soup = BeautifulSoup(response.text, 'lxml')
 
-            # 1. Access the main header container (section.navbar-novel)
+            # 1. Access the main header container
             header = soup.select_one(self._selectors['meta_header'])
             if not header:
                 logger.error(f"[{self.class_name}] Could not find book header at {self._main_url}")
                 raise ValueError("Could not find the book header. Check the URL.")
 
-            # 2. Extract Title (h1.mb-0)
+            # 2. Extract Title
             title_element = header.select_one(self._selectors['meta_title'])
             title = title_element.get_text(strip=True) if title_element else "Unknown Title"
 
-            # 3. Extract Author and Info from the hero-novel container
+            # 3. Extract Author and Info from hero section
             info_content = header.select_one(self._selectors['meta_info'])
-            # In Novels-BR, Author is in h3 and Chapters Count is in h6
             author_text = "Unknown Author"
             if info_content:
                 author_tag = info_content.select_one('h3')
                 if author_tag:
                     author_text = author_tag.get_text(strip=True)
 
-            # 4. Extract Description (p with specific justify style)
-            description_div = soup.select_one(self._selectors['meta_description'])
-            
-            # 5. Extract Cover Link (img with class header-img)
-            # We look for the image inside the header context
+            # 4. Extract Description
+            description_element = soup.select_one(self._selectors['meta_description'])
+            description = description_element.get_text(strip=True) if description_element else "No description available."
+
+            # 5. Extract Cover Link
             cover_img = header.select_one('img.header-img')
             cover_link = cover_img.get('src') if cover_img else None
 
-            logger.info(f"[{self.class_name}] Metadata extracted for: {title}")
+            logger.info(f"[{self.class_name}] Metadata successfully extracted for: {title}")
 
             return {
                 'book_title': title,
                 'book_author': author_text,
-                'book_description': description_div or "No description available.",
+                'book_description': description,
                 'book_cover_link': cover_link
             }
             
@@ -70,35 +75,42 @@ class MyNovelsBrBook(MyBook):
             raise e
     
     def get_chapters_link(self) -> list:
+        """
+        Parses the accordion-style chapter list and returns absolute URLs for the requested range.
+        """
         logger.info(f"[{self.class_name}] Fetching chapter links for range: {self._start_chapter} to {self._start_chapter + self._chapters_quantity - 1}")
         
         try:
-            # 1. Fetch the main novel page
-            response = self._session.get(self._main_url, timeout=10)
+            response = self._session.get(self._main_url, timeout=15)
             response.raise_for_status()
             response.encoding = 'utf-8'
             soup = BeautifulSoup(response.text, 'lxml')
 
-            # 2. Locate the accordion container that holds all volumes and chapters
-            # On Novels-BR, this is usually 'div#volumes'
-            volume_accordion = soup.select_one('div#volumes')
+            # 1. Locate the main accordion container (#volumes)
+            volume_container = soup.select_one(self._selectors['meta_chapter_list_all'])
             
-            if not volume_accordion:
-                logger.error(f"[{self.class_name}] Chapter accordion not found at {self._main_url}")
-                raise ValueError("Could not find the chapter list container.")
+            if not volume_container:
+                # Fallback to generic accordion class if ID is missing
+                volume_container = soup.select_one('div.accordion')
+                if not volume_container:
+                    logger.error(f"[{self.class_name}] Chapter container not found at {self._main_url}")
+                    return []
 
-            # 3. Extract all available chapter anchor tags from the lists
-            all_links = volume_accordion.select('ol li a.custom-link')
+            # 2. Extract all chapter links using the specific accordion hierarchy
+            # Path: div#volumes -> accordion-body -> ol -> li -> a
+            all_links = volume_container.select('div.accordion-body ol li a.custom-link')
             total_available = len(all_links)
+            
+            logger.info(f"[{self.class_name}] Found {total_available} chapters available on the page.")
 
             if total_available == 0:
-                logger.error(f"[{self.class_name}] No chapter links extracted from the accordion.")
-                raise ValueError("No chapters found on this page.")
+                logger.warning(f"[{self.class_name}] No links found with primary selector. Trying generic 'ol li a'.")
+                all_links = volume_container.select('ol li a')
+                total_available = len(all_links)
 
-            # 4. Calculate the slice based on requested start and quantity
-            # We use (start - 1) because lists are 0-indexed (Chapter 1 is index 0)
+            # 3. Calculate slice range
             start_index = max(0, self._start_chapter - 1)
-            end_index = min(start_index + self._chapters_quantity, total_available)
+            end_index = start_index + self._chapters_quantity
             
             selected_anchors = all_links[start_index : end_index]
             
@@ -106,7 +118,7 @@ class MyNovelsBrBook(MyBook):
             for anchor in selected_anchors:
                 href = anchor.get('href')
                 if href:
-                    # Normalize relative URLs to absolute ones
+                    # Normalize relative URLs to absolute
                     full_url = f"https://novels-br.com{href}" if href.startswith('/') else href
                     chapter_urls.append(full_url)
             
@@ -115,106 +127,74 @@ class MyNovelsBrBook(MyBook):
 
         except Exception as e:
             logger.error(f"[{self.class_name}] Failed to retrieve chapter links: {e}", exc_info=True)
-            raise e
+            return []
     
     def get_chapter_content(self, url: str) -> dict:
-        # Fetch the chapter page
-        response = self._session.get(url, timeout=10)
+        """
+        Fetches and cleans the main text content of a single chapter, 
+        targeting pure paragraph tags within the content container.
+        """
+        logger.debug(f"[{self.class_name}] Scraping content from: {url}")
         
-        if response.status_code == 429:
-            logger.warning(f"[{self.class_name}] Rate limited (429) on {url}. Retrying after sleep...")
-            time.sleep(2)
-            response = self._session.get(url, timeout=10)
+        try:
+            response = self._session.get(url, timeout=15)
+            
+            # Handling potential rate limits
+            if response.status_code == 429:
+                logger.warning(f"[{self.class_name}] Rate limited (429). Waiting 2s before retry...")
+                time.sleep(2)
+                response = self._session.get(url, timeout=15)
 
-        response.raise_for_status()
-        response.encoding = 'utf-8'
-        soup = BeautifulSoup(response.text, 'lxml')
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+            soup = BeautifulSoup(response.text, 'lxml')
 
-        # 1. Select the title and the main container
-        # Note: Assuming self._selectors['chap_content'] is '.chapter-content'
-        chapter_title = soup.select_one(self._selectors.get('chap_title', 'h1'))
-        content_div = soup.select_one(self._selectors.get('chap_content', '.chapter-content'))
+            # 1. Select the title (often h1 or h2 with chapter-title class)
+            chapter_title = soup.select_one('h1.mb-0, h2.chapter-title, .chapter-title')
+            
+            # 2. Select the main container
+            container = soup.select_one(self._selectors.get('chap_content', 'div.chapter-content'))
 
-        if not content_div:
-            # Fallback to general WordPress content div if primary fails
-            content_div = soup.find('div', class_='entry-content')
-            if content_div:
-                logger.debug(f"[{self.class_name}] Primary content selector failed, used fallback for {url}")
-            else:
-                logger.error(f"[{self.class_name}] Content div not found for {url}")
+            if not container:
+                logger.error(f"[{self.class_name}] Main container 'div.chapter-content' not found at {url}")
                 return {'chapter_title': 'Error', 'main_content': None}
 
-        # 2. CLEANUP: Novels-BR specific junk removal
-        # Decompose Ads and hidden SEO elements to keep only the story text
-        
-        # Remove Google Ads containers
-        for ads in content_div.select('.google-auto-placed, ins, script'):
-            ads.decompose()
+            # 3. CLEANUP: Remove known junk before extracting paragraphs
+            for junk in container.select('.google-auto-placed, ins, script, .adsbygoogle, .page-link, style'):
+                junk.decompose()
+
+            # 4. EXTRACTION: Create a new container to hold only "pure" paragraphs
+            # This avoids picking up unwanted text nodes or nested div garbage
+            cleaned_content = soup.new_tag("div")
             
-        # Remove the hidden SEO link usually found in the first/second <p>
-        # Pattern: <p style="display: none">Leia em https://...</p>
-        for hidden_p in content_div.find_all('p', style=lambda s: s and 'display: none' in s):
-            hidden_p.decompose()
-
-        # Remove the internal link anchor that duplicates the title
-        # Pattern: <a class="page-link" rel="nofollow" ...>
-        for internal_link in content_div.find_all('a', class_='page-link'):
-            internal_link.decompose()
-
-        # 3. Return cleaned data
-        return {
-            'chapter_title': chapter_title.get_text(strip=True) if chapter_title else "Untitled",
-            'main_content': content_div 
-        }
-    
-if __name__ == "__main__":
-    # 1. Setup parameters for testing
-    # Replace this URL with a valid novel URL from Novels-BR
-    test_url = "https://novels-br.com/novels/reincarnation-of-the-strongest-sword-god/"
-    start_chap = 1
-    quantity = 20
-    
-    # 2. Instantiate the class
-    # Arguments: main_url, start_chapter, chapters_quantity, output_folder (dummy for test)
-    book = MyNovelsBrBook(test_url, quantity, start_chap)
-
-    print("\n" + "="*50)
-    print("TESTING: get_book_metadata")
-    print("="*50)
-    try:
-        metadata = book.get_book_metadata()
-        print(f"Title:  {metadata['book_title']}")
-        print(f"Author: {metadata['book_author']}")
-        print(f"Cover:  {metadata['book_cover_link']}")
-        # print(f"Description: {metadata['book_description'].get_text()[:100]}...")
-    except Exception as e:
-        print(f"Metadata Test Failed: {e}")
-
-    print("\n" + "="*50)
-    print("TESTING: get_chapters_link")
-    print("="*50)
-    links = []
-    try:
-        links = book.get_chapters_link()
-        for idx, link in enumerate(links, 1):
-            print(f"{idx}. {link}")
-    except Exception as e:
-        print(f"Chapter Links Test Failed: {e}")
-
-    if links:
-        print("\n" + "="*50)
-        print(f"TESTING: get_chapter_content (First link)")
-        print("="*50)
-        try:
-            content = book.get_chapter_content(links[0])
-            print(f"Chapter Title: {content['chapter_title']}")
+            # Find all <p> tags that do NOT have classes or IDs (pure story text)
+            paragraphs = container.find_all('p', recursive=True)
             
-            # Show the first few cleaned paragraphs
-            paragraphs = content['main_content'].find_all('p')
-            print("\nContent Preview (First 3 clean paragraphs):")
-            for p in paragraphs[:3]:
+            valid_paragraphs_count = 0
+            for p in paragraphs:
+                # Filter out hidden SEO text or empty paragraphs
+                style = p.get('style', '')
+                if 'display: none' in style or 'visibility: hidden' in style:
+                    continue
+                
+                # Filter out common "Support the author" or "Read at site" junk
                 text = p.get_text(strip=True)
-                if text:
-                    print(f"- {text}")
+                if not text or len(text) < 3 or "Leia em https" in text:
+                    continue
+                
+                # If it's a pure paragraph, append it to our cleaned container
+                cleaned_content.append(p)
+                valid_paragraphs_count += 1
+
+            if valid_paragraphs_count == 0:
+                logger.warning(f"[{self.class_name}] No valid paragraphs found. Falling back to full container text.")
+                cleaned_content = container
+
+            return {
+                'chapter_title': chapter_title.get_text(strip=True) if chapter_title else "Untitled Chapter",
+                'main_content': cleaned_content 
+            }
+
         except Exception as e:
-            print(f"Chapter Content Test Failed: {e}")
+            logger.error(f"[{self.class_name}] Error fetching chapter content at {url}: {e}", exc_info=True)
+            return {'chapter_title': 'Error', 'main_content': None}

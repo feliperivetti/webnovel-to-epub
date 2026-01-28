@@ -2,15 +2,49 @@ import time
 import os
 import uvicorn
 import requests
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from jose import jwt, JWTError
 from src.routes import book_routes, search_routes
 from src.utils.logger import logger
+
 
 # --- LOAD ENVIRONMENT VARIABLES ---
 load_dotenv()
 
+# --- JWT CONFIGURATION ---
+API_JWT_SECRET = os.environ.get("API_JWT_SECRET")
+ALGORITHM = "HS256"
+security = HTTPBearer()
+async def verify_internal_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> dict:
+    """
+    Validates the internal JWT signed by the Edge Function.
+    Returns the token payload if valid.
+    """
+    if not API_JWT_SECRET:
+        logger.warning("API_JWT_SECRET not configured - skipping validation (dev mode)")
+        return {"sub": "dev", "tier": "premium", "action": "generate-epub"}
+    
+    token = credentials.credentials
+    
+    try:
+        payload = jwt.decode(token, API_JWT_SECRET, algorithms=[ALGORITHM])
+        
+        # Validate action (optional - for extra security)
+        if payload.get("action") != "generate-epub":
+            raise HTTPException(status_code=403, detail="Invalid action")
+        
+        logger.info(f"✅ Authenticated request from user {payload.get('sub')} (tier: {payload.get('tier')})")
+        return payload
+        
+    except JWTError as e:
+        logger.error(f"❌ JWT validation failed: {e}")
+        raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
+    
 # Initialize the FastAPI application with professional metadata
 app = FastAPI(
     title="Novel Scraper API",
@@ -42,8 +76,12 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 # --- ROUTE REGISTRATION ---
-app.include_router(book_routes.router)
-app.include_router(search_routes.router)
+# Pass the dependency to the router that needs protection
+app.include_router(
+    book_routes.router,
+    dependencies=[Depends(verify_internal_token)]  # 🔐 Protected routes
+)
+app.include_router(search_routes.router)  # Search stays public
 
 # --- HEALTH CHECK ROUTE ---
 @app.get("/", tags=["Health"])

@@ -16,6 +16,36 @@ def royalroad_chap_html():
         return f.read()
 
 @pytest.fixture
+def pandanovel_toc_html():
+    with open(f"{FIXTURES_DIR}/pandanovel_toc.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@pytest.fixture
+def pandanovel_chap_html():
+    with open(f"{FIXTURES_DIR}/pandanovel_chap.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@pytest.fixture
+def novelsbr_toc_html():
+    with open(f"{FIXTURES_DIR}/novelsbr_toc.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@pytest.fixture
+def novelsbr_chap_html():
+    with open(f"{FIXTURES_DIR}/novelsbr_chap.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@pytest.fixture
+def centralnovel_toc_html():
+    with open(f"{FIXTURES_DIR}/centralnovel_toc.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@pytest.fixture
+def centralnovel_chap_html():
+    with open(f"{FIXTURES_DIR}/centralnovel_chap.html", "r", encoding="utf-8") as f:
+        return f.read()
+
+@pytest.fixture
 def mock_cloudscraper(mocker):
     """
     Mock cloudscraper to avoid real network requests.

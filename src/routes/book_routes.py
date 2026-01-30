@@ -3,9 +3,13 @@ import tempfile
 import os
 import re
 import json
-from fastapi import APIRouter, HTTPException, Query, BackgroundTasks, Request
+from typing import Dict, Any
+
+from fastapi import APIRouter, HTTPException, Query, BackgroundTasks, Request, status
 from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
 from sse_starlette.sse import EventSourceResponse
+
+from src.schemas.novel_schema import TaskStartResponse, ErrorMessage
 
 from src.services.centralnovel_service import CentralNovelService
 from src.services.novelsbr_service import NovelsBrService
@@ -109,16 +113,29 @@ async def background_epub_generation(task_id: str, url: str, qty: int, start: in
 
 # --- ENDPOINTS ---
 
-@router.post("/generate", status_code=202)
+@router.post(
+    "/generate", 
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=TaskStartResponse,
+    responses={
+        400: {"model": ErrorMessage, "description": "Invalid parameters or unsupported domain"},
+        401: {"model": ErrorMessage, "description": "Unauthorized - Missing or Invalid Token"},
+        202: {"description": "Task accepted and started in background"}
+    }
+)
 async def start_generation_task(
     background_tasks: BackgroundTasks,
-    url: str = Query(..., description="The full URL of the novel series"),
-    qty: int = Query(default=1, ge=1, le=settings.MAX_CHAPTERS_LIMIT, description="Number of chapters to download"),
-    start: int = Query(default=1, ge=1, description="Starting chapter number")
+    url: str = Query(..., description="The full URL of the novel series to scrape (e.g., https://royalroad.com/fiction/...)"),
+    qty: int = Query(default=1, ge=1, le=settings.MAX_CHAPTERS_LIMIT, description="Number of chapters to download (Max: 50)"),
+    start: int = Query(default=1, ge=1, description="Starting chapter number (1-indexed)")
 ):
     """
-    Starts the EPUB generation process in the background.
-    Returns a Task ID to track progress.
+    **Start EPUB Generation Task**
+
+    Initiates a background job to scrape the novel and generate an EPUB file.
+    
+    - **Security**: Requires a valid Internal JWT in the `Authorization` header.
+    - **Flow**: Returns a `task_id` immediately. The client should listen to the SSE endpoint `/books/events/{task_id}` for progress updates.
     """
     # Quick Validation
     if not ScraperRegistry.get_service(url):
@@ -132,10 +149,24 @@ async def start_generation_task(
     return {"task_id": task_id, "message": "Generation started", "status_url": f"/books/events/{task_id}"}
 
 
-@router.get("/events/{task_id}")
+@router.get(
+    "/events/{task_id}",
+    response_class=EventSourceResponse,
+    responses={
+        404: {"model": ErrorMessage, "description": "Task not found (or expired)"}
+    }
+)
 async def get_progress_events(request: Request, task_id: str):
     """
-    SSE Endpoint. Streams progress updates for a given task.
+    **Stream Progress Updates (SSE)**
+
+    Real-time Server-Sent Events stream for task progress.
+    
+    - **Format**: `text/event-stream`
+    - **Events**:
+        - `update`: JSON data `{ "status": "processing", "progress": 50 }`
+        - `error`: JSON data `{ "message": "error details" }`
+        - **Completion**: When status is `completed`, data includes `download_url`.
     """
     async def event_generator():
         # Check initial validity
@@ -190,10 +221,26 @@ async def get_progress_events(request: Request, task_id: str):
     return EventSourceResponse(event_generator())
 
 
-@router.get("/download/{task_id}")
+@router.get(
+    "/download/{task_id}",
+    response_class=FileResponse,
+    responses={
+        200: {
+            "content": {"application/epub+zip": {}},
+            "description": "Returns the generated EPUB file."
+        },
+        404: {"model": ErrorMessage, "description": "File not ready or expired"},
+        500: {"model": ErrorMessage, "description": "File system error"}
+    }
+)
 async def download_book(task_id: str, background_tasks: BackgroundTasks):
     """
-    Downloads the generated file and schedules cleanup.
+    **Download Generated EPUB**
+
+    Retrieves the final EPUB file for a completed task.
+    
+    - **Cleanup**: The file is scheduled for deletion after successful download.
+    - **Security**: Protected by JWT.
     """
     task = TaskManager.get_task(task_id)
     if not task or task["status"] != "completed":

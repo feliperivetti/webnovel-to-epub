@@ -23,7 +23,6 @@ class MyCentralNovelBook(BaseScraper):
         }
 
     def get_book_metadata(self) -> BookMetadata:
-        logger.info(f"[{self.class_name}] Fetching metadata from: {self._main_url}")
         
         try:
             response = self._session.get(self._main_url, timeout=10)
@@ -63,7 +62,6 @@ class MyCentralNovelBook(BaseScraper):
             raise e
 
     def get_chapters_link(self) -> list:
-        logger.info(f"[{self.class_name}] Generating chapter URLs for range: {self._start_chapter} to {self._start_chapter + self._chapters_quantity - 1}")
         
         response = self._session.get(self._main_url, timeout=10)
         response.raise_for_status()

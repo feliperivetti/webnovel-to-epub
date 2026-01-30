@@ -20,8 +20,15 @@ async def verify_internal_token(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> dict:
     """
-    Validates the internal JWT signed by the Edge Function.
-    Returns the token payload if valid.
+    **JWT Validator for Internal Communication**
+
+    This dependency verifies that the request includes a valid Bearer token signed by the Edge Function.
+    
+    - **Header**: `Authorization: Bearer <token>`
+    - **Algorithm**: HS256
+    - **Required Claims**: `sub`, `tier`, `action`
+    
+    Returns the decoded payload if valid.
     """
     if not settings.API_JWT_SECRET:
         logger.warning("API_JWT_SECRET not configured - skipping validation (dev mode)")
@@ -65,10 +72,47 @@ async def lifespan(app: FastAPI):
     logger.info("🛑 Scheduler shut down.")
 
 # Initialize the FastAPI application with professional metadata
+tags_metadata = [
+    {
+        "name": "Books",
+        "description": "**Protected Operations**. Scrape novels and generate EPUBs. **Requires JWT**.",
+    },
+    {
+        "name": "Search",
+        "description": "Public search operations for supported novel sources.",
+    },
+    {
+        "name": "Health",
+        "description": "System health and status checks.",
+    },
+]
+
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Professional API for scraping novels, searching sources, and generating EPUB files.",
+    description="""
+    # WebNovel to EPUB Service 📚
+
+    Professional API for scraping novels, searching sources, and generating EPUB files.
+    
+    ## 🔐 Authentication
+    
+    Most endpoints in the `/books` namespace are **protected** and require an Internal JWT.
+    You must include the token in the `Authorization` header:
+    
+    `Authorization: Bearer <your_token>`
+    
+    > **Note**: This service is designed to be called by the Supabase Edge Functions, which sign the tokens.
+    """,
     version="1.0.0",
+    openapi_tags=tags_metadata,
+    contact={
+        "name": "API Support",
+        "email": "support@example.com",
+    },
+    license_info={
+        "name": "MIT",
+    },
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1},  # Hide schemas sidebar for cleaner look
     lifespan=lifespan
 )
 

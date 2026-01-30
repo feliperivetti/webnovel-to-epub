@@ -117,6 +117,7 @@ class BaseScraper(ABC):
             progress_callback(5)
 
         # 1. Metadata Extraction
+        logger.info(f"[{self.class_name}] Step 1: Fetching metadata...")
         try:
         # ... (metadata logic matches existing) ...
             # Now expects a Pydantic Model directly
@@ -137,6 +138,7 @@ class BaseScraper(ABC):
 
         # ... (chapters selection) ...
         try:
+            logger.info(f"[{self.class_name}] Step 2: Fetching chapter links...")
             chapter_urls = self.get_chapters_link()
         except ValueError as e:
             # Often subclasses raise ValueError for invalid range/empty chapters

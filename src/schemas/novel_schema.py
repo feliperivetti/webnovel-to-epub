@@ -25,6 +25,13 @@ class SearchResponse(BaseModel):
 
 # --- DOWNLOAD / EPUB SCHEMAS ---
 
+class TaskStartResponse(BaseModel):
+    """Response schema for starting a background generation task."""
+    task_id: str = Field(..., description="Unique ID to track the generation progress")
+    message: str = Field(..., description="Confirmation message")
+    status_url: str = Field(..., description="URL to listen for progress events (SSE)")
+
+
 class EpubRequest(BaseModel):
     """
     Schema for EPUB generation request. 

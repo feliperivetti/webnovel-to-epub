@@ -6,13 +6,24 @@ from src.schemas.novel_schema import BookMetadata, ChapterContent
 from src.utils.exceptions import ScraperParsingException, NovelNotFoundException
 
 class MyNovelsBrBook(BaseScraper):
-    # ... (docstring/init same) ...
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        
+        # SELECTORS (Restored/Inferred)
+        self._selectors = {
+            'meta_header': 'div.book-header',
+            'meta_title': 'h1.book-title',
+            'meta_info': 'div.book-info',
+            'meta_description': 'div.book-description',
+            'meta_chapter_list_all': 'div#volumes',
+            
+            'chap_content': 'div.chapter-content'
+        }
 
     def get_book_metadata(self) -> BookMetadata:
         """
         Extracts book title, author, description, and cover image from the main page.
         """
-        logger.info(f"[{self.class_name}] Fetching metadata from: {self._main_url}")
         
         try:
             response = self._session.get(self._main_url, timeout=10)
@@ -64,7 +75,6 @@ class MyNovelsBrBook(BaseScraper):
         """
         Parses the accordion-style chapter list and returns absolute URLs for the requested range.
         """
-        logger.info(f"[{self.class_name}] Fetching chapter links for range: {self._start_chapter} to {self._start_chapter + self._chapters_quantity - 1}")
         
         try:
             response = self._session.get(self._main_url, timeout=15)

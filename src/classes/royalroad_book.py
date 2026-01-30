@@ -26,7 +26,6 @@ class MyRoyalRoadBook(BaseScraper):
 
     def get_book_metadata(self) -> BookMetadata:
         """Extracts basic book information using the shared session."""
-        logger.info(f"[{self.class_name}] Fetching metadata from Royal Road: {self._main_url}")
         
         try:
             response = self._session.get(self._main_url, timeout=10)
@@ -68,7 +67,6 @@ class MyRoyalRoadBook(BaseScraper):
         # Let's replace the whole file content related to methods to be safe.
         
         """Retrieves real chapter links and validates the requested range."""
-        logger.info(f"[{self.class_name}] Retrieving chapter list from main page...")
         
         response = self._session.get(self._main_url, timeout=10)
         response.raise_for_status()

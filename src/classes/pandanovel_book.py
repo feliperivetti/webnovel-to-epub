@@ -23,7 +23,6 @@ class MyPandaNovelBook(BaseScraper):
 
     def get_book_metadata(self) -> BookMetadata:
         """Extracts novel metadata using the shared session with logging."""
-        logger.info(f"[{self.class_name}] Fetching metadata from Panda: {self._main_url}")
         
         try:
             response = self._session.get(self._main_url, timeout=10)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from src.schemas.novel_schema import SearchResponse
+from src.schemas.novel_schema import SearchResponse, ErrorMessage
 from src.utils.logger import logger
 
 from src.services.centralnovel_service import CentralNovelService
@@ -12,14 +12,25 @@ from src.services.royalroad_service import RoyalRoadService
 router = APIRouter(prefix="/search", tags=["Search"])
 
 
-@router.get("/", response_model=SearchResponse)
+@router.get(
+    "/", 
+    response_model=SearchResponse,
+    responses={
+        400: {"model": ErrorMessage, "description": "Invalid source or parameters"},
+        500: {"model": ErrorMessage, "description": "Internal search error"}
+    }
+)
 def search_novel(
     source: str = Query(..., description="The source site (royal, panda, novelsbr, central)"),
-    query: str = Query(..., min_length=2, description="The search term")
+    query: str = Query(..., min_length=2, description="The search term (min 2 chars)")
 ):
     """
-    Unified search endpoint.
-    Identifies the service provider, executes the search, and logs the process.
+    **Unified Novel Search**
+
+    Searches for novels across supported platforms.
+    
+    - **Sources**: `royal` (RoyalRoad), `panda` (PandaNovel), `novelsbr` (NovelsBr), `central` (CentralNovel).
+    - **Public Endpoint**: No authentication required.
     """
     # Log the incoming request details
     logger.info(f"🔍 Incoming search request | Source: {source} | Query: {query}")

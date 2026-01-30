@@ -71,3 +71,4 @@ Este projeto é para fins educacionais e experimentais. Respeite as políticas d
 Para dúvidas ou suporte adicional, entre em contato pelo e-mail: [fporto@sarrat.com.br](fporto@sarrat.com.br)
 
 Obrigado por usar o projeto! Boa leitura! 🚀📚
+

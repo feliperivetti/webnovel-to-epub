@@ -44,11 +44,32 @@ async def verify_internal_token(
         logger.error(f"❌ JWT validation failed: {e}")
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
     
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from src.services.cleanup_service import cleanup_stale_files
+
+# --- LIFESPAN MANAGER (Scheduler) ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Initialize Scheduler
+    scheduler = AsyncIOScheduler()
+    # Run cleanup every hour (3600s)
+    scheduler.add_job(cleanup_stale_files, 'interval', seconds=3600)
+    scheduler.start()
+    logger.info("🕒 Scheduler started: File cleanup job scheduled (every 1h).")
+    
+    yield
+    
+    # Shutdown: Stop Scheduler
+    scheduler.shutdown()
+    logger.info("🛑 Scheduler shut down.")
+
 # Initialize the FastAPI application with professional metadata
 app = FastAPI(
     title=settings.APP_NAME,
     description="Professional API for scraping novels, searching sources, and generating EPUB files.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # ... (middleware same) ...

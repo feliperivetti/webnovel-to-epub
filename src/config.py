@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     DEFAULT_TIMEOUT: int = 15
     MAX_WORKERS: int = 2
     PROXY_URL: Optional[str] = None
+    PROXY_URL_FALLBACK: Optional[str] = None
     
     model_config = SettingsConfigDict(env_file=".env")
 

@@ -69,10 +69,31 @@ class BaseScraper(ABC):
             except requests.exceptions.HTTPError as e:
                  if e.response.status_code == 404:
                      logger.error(f"[{self.class_name}] Chapter 404 Not Found: {url}")
-                     # BaseScraper expects exception to trigger retry or fallback.
-                     # But 404 on chapter usually means it's gone.
                      raise e
                  raise e
+            except (requests.exceptions.ProxyError, requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as e:
+                # Proxy Failover Logic
+                if self.settings.PROXY_URL_FALLBACK and self.settings.PROXY_URL_FALLBACK != self.settings.PROXY_URL:
+                    current_proxy = self._session.proxies.get("http")
+                    # If we are currently using the main proxy, switch to fallback
+                    if current_proxy == self.settings.PROXY_URL:
+                        logger.warning(f"[{self.class_name}] Proxy failed ({e}). Switching to FALLBACK proxy.")
+                        self._session.proxies = {
+                            "http": self.settings.PROXY_URL_FALLBACK,
+                            "https": self.settings.PROXY_URL_FALLBACK
+                        }
+                        # Give it a moment to switch context
+                        time.sleep(1)
+                        continue
+                
+                # Standard Retry Logic
+                if i < max_retries - 1:
+                    wait_time = (2 ** i) * 5 + random.uniform(1, 2)
+                    logger.warning(f"[{self.class_name}] Retry {i+1}/{max_retries} for: {url} | Error: {e} | Waiting {wait_time:.2f}s")
+                    time.sleep(wait_time)
+                    continue
+                logger.error(f"[{self.class_name}] Max retries reached for: {url}")
+                raise e
             except Exception as e:
                 # ... existing retry logic ...
                 if i < max_retries - 1:

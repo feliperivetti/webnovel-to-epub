@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
-from .base_book import BaseScraper
+from src.classes.base_book import BaseScraper
 from src.utils.logger import logger
+from src.schemas.novel_schema import BookMetadata, ChapterContent
 
 
 class MyPandaNovelBook(BaseScraper):
@@ -20,7 +21,7 @@ class MyPandaNovelBook(BaseScraper):
             'chap_content': ('div', {'id': 'content'})
         }
 
-    def get_book_metadata(self) -> dict:
+    def get_book_metadata(self) -> BookMetadata:
         """Extracts novel metadata using the shared session with logging."""
         logger.info(f"[{self.class_name}] Fetching metadata from Panda: {self._main_url}")
         
@@ -42,15 +43,20 @@ class MyPandaNovelBook(BaseScraper):
             if not cover_link:
                 logger.warning(f"[{self.class_name}] No cover image found for this novel.")
 
-            metadata = {
-                'book_title': info.find(*self._selectors['meta_title']).get_text(strip=True) if info else "Unknown Title",
-                'book_author': info.find(*self._selectors['meta_author']).find('a')['title'] if info else "Unknown Author",
-                'book_description': soup.find(*self._selectors['meta_description']) or "No description available.",
-                'book_cover_link': cover_link
-            }
+            title = info.find(*self._selectors['meta_title']).get_text(strip=True) if info else "Unknown Title"
+            author = info.find(*self._selectors['meta_author']).find('a')['title'] if info else "Unknown Author"
             
-            logger.info(f"[{self.class_name}] Metadata successfully extracted: {metadata['book_title']}")
-            return metadata
+            desc_tag = soup.find(*self._selectors['meta_description'])
+            description_str = desc_tag.get_text(strip=True) if desc_tag else "No description available."
+
+            logger.info(f"[{self.class_name}] Metadata successfully extracted: {title}")
+            
+            return BookMetadata(
+                book_title=title,
+                book_author=author,
+                book_description=description_str,
+                book_cover_link=cover_link
+            )
 
         except Exception as e:
             logger.error(f"[{self.class_name}] Critical error during metadata extraction: {e}", exc_info=True)
@@ -63,11 +69,17 @@ class MyPandaNovelBook(BaseScraper):
         if self._start_chapter < 1:
             logger.error(f"[{self.class_name}] Invalid start chapter: {self._start_chapter}")
             raise ValueError("Start chapter must be 1 or greater.")
+        
+        # Ensure only integer part of chapter quantity is used
+        try:
+            qty = int(self._chapters_quantity)
+        except ValueError:
+            qty = 1
 
-        logger.info(f"[{self.class_name}] Generating {self._chapters_quantity} links starting from chapter {self._start_chapter}")
+        logger.info(f"[{self.class_name}] Generating {qty} links starting from chapter {self._start_chapter}")
         
         chapter_urls = []
-        for i in range(self._chapters_quantity):
+        for i in range(qty):
             current_chapter_num = i + self._start_chapter
             # Panda/Novelfire specific URL pattern
             url = f'https://novelfire.noveljk.org/book/{slug}/chapter-{current_chapter_num}'
@@ -75,7 +87,7 @@ class MyPandaNovelBook(BaseScraper):
             
         return chapter_urls
 
-    def get_chapter_content(self, url: str) -> dict:
+    def get_chapter_content(self, url: str) -> ChapterContent:
         """Scrapes chapter content with detailed error logging."""
         response = self._session.get(url, timeout=10)
         
@@ -91,8 +103,13 @@ class MyPandaNovelBook(BaseScraper):
 
         if not main_content_div:
             logger.warning(f"[{self.class_name}] Content div empty for chapter: {url}")
+            content_str = ""
+        else:
+            content_str = main_content_div.decode_contents()
 
-        return {    
-            'chapter_title': chapter_title_tag.get_text(strip=True) if chapter_title_tag else "Untitled Chapter",
-            'main_content': main_content_div
-        }
+        title = chapter_title_tag.get_text(strip=True) if chapter_title_tag else "Untitled Chapter"
+
+        return ChapterContent(
+            title=title,
+            content=content_str
+        )

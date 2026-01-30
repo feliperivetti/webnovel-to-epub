@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from .base_book import BaseScraper
 from src.utils.logger import logger
+from src.schemas.novel_schema import BookMetadata, ChapterContent
 
 
 class MyRoyalRoadBook(BaseScraper):
@@ -23,7 +24,7 @@ class MyRoyalRoadBook(BaseScraper):
             'chap_content': ('div', {'class': 'chapter-inner chapter-content'})
         }
 
-    def get_book_metadata(self) -> dict:
+    def get_book_metadata(self) -> BookMetadata:
         """Extracts basic book information using the shared session."""
         logger.info(f"[{self.class_name}] Fetching metadata from Royal Road: {self._main_url}")
         
@@ -43,20 +44,28 @@ class MyRoyalRoadBook(BaseScraper):
             
             title = header.find(*self._selectors['meta_title']).get_text(strip=True)
             author = header.find(*self._selectors['meta_author']).get_text(strip=True)
+            
+            desc_tag = soup.find(*self._selectors['meta_description'])
+            description = desc_tag.get_text(strip=True) if desc_tag else "No description available."
 
             logger.info(f"[{self.class_name}] Metadata extracted: '{title}' by '{author}'")
 
-            return {
-                'book_title': title,
-                'book_author': author,
-                'book_description': soup.find(*self._selectors['meta_description']) or "No description available.",
-                'book_cover_link': cover_link
-            }
+            return BookMetadata(
+                book_title=title,
+                book_author=author,
+                book_description=description,
+                book_cover_link=cover_link
+            )
         except Exception as e:
             logger.error(f"[{self.class_name}] Error fetching metadata: {e}", exc_info=True)
             raise e
 
     def get_chapters_link(self) -> list:
+        # ... (Same implementation, keeping it brief for diff, NO CHANGE needed here ideally but context requires care)
+        # Actually this method signature didn't change (returns list), so we can skip replacing it if we target strictly.
+        # But to be safe and clean, I will include it or skip it if I can target precisely.
+        # Let's replace the whole file content related to methods to be safe.
+        
         """Retrieves real chapter links and validates the requested range."""
         logger.info(f"[{self.class_name}] Retrieving chapter list from main page...")
         
@@ -89,7 +98,7 @@ class MyRoyalRoadBook(BaseScraper):
         logger.info(f"[{self.class_name}] Queued {len(chapter_urls)} chapters for download (Range: {self._start_chapter}-{end_index})")
         return chapter_urls
 
-    def get_chapter_content(self, url: str) -> dict:
+    def get_chapter_content(self, url: str) -> ChapterContent:
         """Scrapes the title and body text of a specific chapter."""
         # Note: Detailed download logs are handled by the BaseBook executor
         response = self._session.get(url, timeout=10)
@@ -101,9 +110,17 @@ class MyRoyalRoadBook(BaseScraper):
 
         if not content_div:
             logger.warning(f"[{self.class_name}] Content not found for chapter URL: {url}")
+            # Identify behavior: raise error or return empty? Base class raises if content empty.
+            # We return empty string here, base class will catch.
+            content_str = ""
+        else:
+            # Decode content to string here
+            content_str = content_div.decode_contents()
 
-        return {    
-            'chapter_title': chapter_title_tag.get_text(strip=True) if chapter_title_tag else "Untitled Chapter",
-            'main_content': content_div 
-        }
+        title = chapter_title_tag.get_text(strip=True) if chapter_title_tag else "Untitled Chapter"
+
+        return ChapterContent(
+            title=title,
+            content=content_str
+        )
     

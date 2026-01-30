@@ -3,6 +3,7 @@ import time
 from bs4 import BeautifulSoup
 from .base_book import BaseScraper
 from src.utils.logger import logger
+from src.schemas.novel_schema import BookMetadata, ChapterContent
 
 class MyCentralNovelBook(BaseScraper):
     def __init__(self, *args, **kwargs) -> None:
@@ -20,7 +21,7 @@ class MyCentralNovelBook(BaseScraper):
             'chap_content': 'div.epcontent.entry-content'
         }
 
-    def get_book_metadata(self) -> dict:
+    def get_book_metadata(self) -> BookMetadata:
         logger.info(f"[{self.class_name}] Fetching metadata from: {self._main_url}")
         
         try:
@@ -39,16 +40,23 @@ class MyCentralNovelBook(BaseScraper):
             author_text = author_spans[2].get_text(strip=True) if len(author_spans) > 2 else "Unknown Author"
 
             description_div = soup.select_one(self._selectors['meta_description'])
+            # Convert description to string immediately
+            description_str = description_div.get_text(strip=True) if description_div else "No description available."
+            
             title = header.select_one(self._selectors['meta_title']).get_text(strip=True)
+            
+            # Cover link extraction
+            img_tag = header.find('img')
+            cover_link = img_tag.get('src') if img_tag else None
 
             logger.info(f"[{self.class_name}] Metadata extracted for: {title}")
 
-            return {
-                'book_title': title,
-                'book_author': author_text,
-                'book_description': description_div or "No description available.",
-                'book_cover_link': header.find('img').get('src') if header.find('img') else None
-            }
+            return BookMetadata(
+                book_title=title,
+                book_author=author_text,
+                book_description=description_str,
+                book_cover_link=cover_link
+            )
         except Exception as e:
             logger.error(f"[{self.class_name}] Failed to get metadata: {e}", exc_info=True)
             raise e
@@ -65,6 +73,9 @@ class MyCentralNovelBook(BaseScraper):
 
         if total_available == 0:
             logger.error(f"[{self.class_name}] No chapters found on the page.")
+            # CentralNovel often uses dynamic loading or different structure, 
+            # if total is 0 we might want to fail fast or try logic from original code.
+            # Original code raised ValueError.
             raise ValueError("No chapters found.")
 
         raw_slug = self._main_url.strip('/').split('/')[-1]
@@ -80,7 +91,7 @@ class MyCentralNovelBook(BaseScraper):
         logger.info(f"[{self.class_name}] Successfully generated {len(chapter_urls)} chapter links.")
         return chapter_urls
 
-    def get_chapter_content(self, url: str) -> dict:
+    def get_chapter_content(self, url: str) -> ChapterContent:
         # Note: The log of "Downloading chapter..." is handled by BaseBook in ThreadPool
         response = self._session.get(url, timeout=10)
         
@@ -103,6 +114,8 @@ class MyCentralNovelBook(BaseScraper):
                 logger.debug(f"[{self.class_name}] Primary content selector failed, used fallback for {url}")
             else:
                 logger.error(f"[{self.class_name}] Content div not found for {url}")
+                # Create a minimal empty structure to return as string
+                content_div = soup.new_tag("div")
 
         # Cleanup specific to Central Novel (removal of AI notices)
         if content_div:
@@ -111,8 +124,13 @@ class MyCentralNovelBook(BaseScraper):
                 first_p.decompose()
                 logger.debug(f"[{self.class_name}] Removed AI disclaimer from {url}")
 
-        return {
-            'chapter_title': chapter_title.get_text(strip=True) if chapter_title else "Untitled",
-            'main_content': content_div 
-        }
+        title = chapter_title.get_text(strip=True) if chapter_title else "Untitled"
+        
+        # Convert to string now
+        content_str = content_div.decode_contents()
+
+        return ChapterContent(
+            title=title,
+            content=content_str
+        )
     

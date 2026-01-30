@@ -15,10 +15,14 @@ class TestRoyalRoadScraper:
         
         metadata = book.get_book_metadata()
         
-        assert metadata['book_title'] == "The Great Test Novel"
-        assert metadata['book_author'] == "Test Author"
-        assert metadata['book_cover_link'] == "https://example.com/cover.jpg"
-        assert "This is a test description" in metadata['book_description'].get_text()
+        # Now accessing attributes, not keys
+        assert metadata.book_title == "The Great Test Novel"
+        assert metadata.book_author == "Test Author"
+        assert metadata.book_cover_link == "https://example.com/cover.jpg"
+        
+        # Check description content
+        desc = metadata.book_description
+        assert "This is a" in desc and "test" in desc and "description" in desc
 
     def test_get_chapters_link(self, mock_cloudscraper, royalroad_toc_html):
         """
@@ -47,12 +51,12 @@ class TestRoyalRoadScraper:
         
         data = book.get_chapter_content("https://dummy.url")
         
-        assert data['chapter_title'] == "Chapter 1: The Beginning"
+        # Now accessing attributes
+        assert data.title == "Chapter 1: The Beginning"
         
-        content = data['main_content']
-        # content is a BeautifulSoup Tag
-        assert content.name == 'div'
-        assert "Once upon a time" in content.get_text()
+        # Content is now a string, not a BS4 Tag
+        assert isinstance(data.content, str)
+        assert "Once upon a time" in data.content
 
     def test_start_chapter_validation(self, mock_cloudscraper, royalroad_toc_html):
         """

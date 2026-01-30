@@ -49,6 +49,11 @@ class ErrorMessage(BaseModel):
 
 # --- INTERNAL DATA MODELS (SRP) ---
 
+class ChapterContent(BaseModel):
+    """Raw scraped chapter content without index."""
+    title: str
+    content: str  # HTML string
+
 class Chapter(BaseModel):
     """Represents a single chapter's content."""
     index: int

@@ -2,6 +2,7 @@ import time
 from bs4 import BeautifulSoup
 from src.classes.base_book import BaseScraper
 from src.utils.logger import logger
+from src.schemas.novel_schema import BookMetadata, ChapterContent
 
 class MyNovelsBrBook(BaseScraper):
     """
@@ -23,7 +24,7 @@ class MyNovelsBrBook(BaseScraper):
             'chap_content': 'div.chapter-content'
         }
         
-    def get_book_metadata(self) -> dict:
+    def get_book_metadata(self) -> BookMetadata:
         """
         Extracts book title, author, description, and cover image from the main page.
         """
@@ -55,7 +56,7 @@ class MyNovelsBrBook(BaseScraper):
 
             # 4. Extract Description
             description_element = soup.select_one(self._selectors['meta_description'])
-            description = description_element.get_text(strip=True) if description_element else "No description available."
+            description_str = description_element.get_text(strip=True) if description_element else "No description available."
 
             # 5. Extract Cover Link
             cover_img = header.select_one('img.header-img')
@@ -63,18 +64,19 @@ class MyNovelsBrBook(BaseScraper):
 
             logger.info(f"[{self.class_name}] Metadata successfully extracted for: {title}")
 
-            return {
-                'book_title': title,
-                'book_author': author_text,
-                'book_description': description,
-                'book_cover_link': cover_link
-            }
+            return BookMetadata(
+                book_title=title,
+                book_author=author_text,
+                book_description=description_str,
+                book_cover_link=cover_link
+            )
             
         except Exception as e:
             logger.error(f"[{self.class_name}] Failed to get metadata: {e}", exc_info=True)
             raise e
     
     def get_chapters_link(self) -> list:
+        # Keeping this brief as logic remains same, just ensuring correct method bounds
         """
         Parses the accordion-style chapter list and returns absolute URLs for the requested range.
         """
@@ -129,7 +131,7 @@ class MyNovelsBrBook(BaseScraper):
             logger.error(f"[{self.class_name}] Failed to retrieve chapter links: {e}", exc_info=True)
             return []
     
-    def get_chapter_content(self, url: str) -> dict:
+    def get_chapter_content(self, url: str) -> ChapterContent:
         """
         Fetches and cleans the main text content of a single chapter, 
         targeting pure paragraph tags within the content container.
@@ -157,14 +159,14 @@ class MyNovelsBrBook(BaseScraper):
 
             if not container:
                 logger.error(f"[{self.class_name}] Main container 'div.chapter-content' not found at {url}")
-                return {'chapter_title': 'Error', 'main_content': None}
+                # Return empty content object
+                return ChapterContent(title='Error', content='')
 
             # 3. CLEANUP: Remove known junk before extracting paragraphs
             for junk in container.select('.google-auto-placed, ins, script, .adsbygoogle, .page-link, style'):
                 junk.decompose()
 
             # 4. EXTRACTION: Create a new container to hold only "pure" paragraphs
-            # This avoids picking up unwanted text nodes or nested div garbage
             cleaned_content = soup.new_tag("div")
             
             # Find all <p> tags that do NOT have classes or IDs (pure story text)
@@ -190,11 +192,13 @@ class MyNovelsBrBook(BaseScraper):
                 logger.warning(f"[{self.class_name}] No valid paragraphs found. Falling back to full container text.")
                 cleaned_content = container
 
-            return {
-                'chapter_title': chapter_title.get_text(strip=True) if chapter_title else "Untitled Chapter",
-                'main_content': cleaned_content 
-            }
+            title = chapter_title.get_text(strip=True) if chapter_title else "Untitled Chapter"
+            
+            return ChapterContent(
+                title=title,
+                content=cleaned_content.decode_contents()
+            )
 
         except Exception as e:
             logger.error(f"[{self.class_name}] Error fetching chapter content at {url}: {e}", exc_info=True)
-            return {'chapter_title': 'Error', 'main_content': None}
+            return ChapterContent(title='Error', content='')

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from src.utils.constants import API_CONFIG, EPUB_STRINGS
 from src.utils.logger import logger
-from src.schemas.novel_schema import Novel, Chapter, BookMetadata
+from src.schemas.novel_schema import Novel, Chapter, BookMetadata, ChapterContent
 
 class BaseScraper(ABC):
     def __init__(self, main_url: str, chapters_quantity: int, start_chapter: int):
@@ -44,8 +44,8 @@ class BaseScraper(ABC):
         logger.debug(f"[{self.class_name}] Instance initialized for: {main_url}")
 
     @abstractmethod
-    def get_book_metadata(self) -> dict: 
-        """Must return a dict compatible with BookMetadata."""
+    def get_book_metadata(self) -> BookMetadata: 
+        """Must return a BookMetadata object."""
         pass
 
     @abstractmethod
@@ -54,19 +54,20 @@ class BaseScraper(ABC):
         pass
 
     @abstractmethod
-    def get_chapter_content(self, url: str) -> dict: 
-        """Must return a dict with chapter_title and main_content (BeautifulSoup node)."""
+    def get_chapter_content(self, url: str) -> ChapterContent: 
+        """Must return a ChapterContent object with title and content."""
         pass
 
-    def _fetch_with_retry(self, url: str, max_retries: int = 3):
+    def _fetch_with_retry(self, url: str, max_retries: int = 3) -> ChapterContent:
         """Internal helper to fetch chapter content with exponential backoff."""
         for i in range(max_retries):
             try:
                 data = self.get_chapter_content(url)
-                if not data or not data.get('main_content'):
+                if not data or not data.content:
                     raise ValueError("Main content is empty or not found.")
                 return data
             except Exception as e:
+                # ... existing retry logic ...
                 if i < max_retries - 1:
                     wait_time = (2 ** i) * 5 + random.uniform(1, 2)
                     logger.warning(f"[{self.class_name}] Retry {i+1}/{max_retries} for: {url} | Error: {e} | Waiting {wait_time:.2f}s")
@@ -82,25 +83,9 @@ class BaseScraper(ABC):
 
         # 1. Metadata Extraction
         try:
-            metadata_dict = self.get_book_metadata()
-            # Ensure safety against None values
-            meta_title = metadata_dict.get('book_title', 'Unknown')
-            meta_author = metadata_dict.get('book_author', 'Unknown Author')
-            meta_desc = metadata_dict.get('book_description', EPUB_STRINGS["default_no_description"])
-            
-            # Helper to Convert BeautifulSoup tags to string if needed
-            def to_str(value):
-                if value is None: return ""
-                return value.get_text(strip=True) if hasattr(value, 'get_text') else str(value)
-
-            self.book_title = to_str(meta_title)
-            
-            book_metadata = BookMetadata(
-                book_title=self.book_title,
-                book_author=to_str(meta_author),
-                book_description=to_str(meta_desc),
-                book_cover_link=to_str(metadata_dict.get('book_cover_link'))
-            )
+            # Now expects a Pydantic Model directly
+            book_metadata = self.get_book_metadata()
+            self.book_title = book_metadata.book_title
             
         except Exception as e:
             logger.error(f"[{self.class_name}] Critical failure fetching metadata: {e}", exc_info=True)
@@ -139,14 +124,16 @@ class BaseScraper(ABC):
             for future in concurrent.futures.as_completed(future_to_index):
                 index = future_to_index[future]
                 try:
+                    # Result is now a ChapterContent object
                     result = future.result()
                     chapters_data_results[index] = result
                 except Exception as e:
                     logger.error(f"[{self.class_name}] Error on chapter {index+1}: {e}")
-                    chapters_data_results[index] = {
-                        'chapter_title': f'Error Chapter {index+1}', 
-                        'main_content': EPUB_STRINGS["error_content"]
-                    }
+                    # Fallback for error
+                    chapters_data_results[index] = ChapterContent(
+                        title=f'Error Chapter {index+1}', 
+                        content=EPUB_STRINGS["error_content"]
+                    )
                 
                 completed_count += 1
                 if completed_count in checkpoints or completed_count == total_to_download:
@@ -157,19 +144,11 @@ class BaseScraper(ABC):
         for i, data in enumerate(chapters_data_results):
             if not data: continue
             
-            # Helper again
-            def to_str(value):
-                if value is None: return ""
-                return value.get_text(strip=True) if hasattr(value, 'get_text') else str(value)
-            
-            title = to_str(data.get('chapter_title', f'Chapter {i + 1}'))
-            content_node = data.get('main_content')
-            raw_html = content_node.decode_contents() if hasattr(content_node, 'decode_contents') else str(content_node)
-
+            # Data is already ChapterContent, no need to parse dicts
             chapters.append(Chapter(
                 index=i+1,
-                title=title,
-                content=raw_html
+                title=data.title,
+                content=data.content
             ))
 
         if not chapters:

@@ -43,30 +43,29 @@ def test_generate_epub_endpoint(mocker):
     # Connect the scraper to the service
     mock_service.get_book_instance.return_value = mock_scraper
     
-    # 5. Make the request
-    response = client.get("/books/generate-epub", params={
+    # 5. Make the request (POST now)
+    response = client.post("/books/generate", params={
         "url": "https://www.royalroad.com/fiction/12345/test-novel",
         "qty": 5,
         "start": 1
     })
     
-    # 6. Assertions
-    assert response.status_code == 200
-    assert response.headers["content-type"] == "application/epub+zip"
-    assert "My Test Novel.epub" in response.headers["content-disposition"]
-    assert response.content == fake_epub_content
+    # 6. Assertions for Task Start
+    assert response.status_code == 202
+    data = response.json()
+    assert "task_id" in data
+    assert "status_url" in data
     
-    # Verify calls
-    mock_scraper.scrape_novel.assert_called_once()
-    mock_builder.create_epub.assert_called_once_with(mock_novel)
+    # We do NOT verify mock_scraper calls here because they happen in background task
+    # and might not have run yet. Integration test (test_sse.py) covers execution.
 
 def test_generate_epub_invalid_domain():
     """
     Test that an unsupported domain returns 400.
     """
-    response = client.get("/books/generate-epub", params={
+    response = client.post("/books/generate", params={
         "url": "https://unknown-site.com/fiction",
     })
     
     assert response.status_code == 400
-    assert "Source not supported" in response.json()['detail']
+    assert "Unsupported domain" in response.json()['detail']

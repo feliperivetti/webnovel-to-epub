@@ -1,16 +1,19 @@
 from pydantic import BaseModel, HttpUrl, Field
 from typing import List, Optional
 
-from src.utils.constants import API_CONFIG
+from src.config import get_settings
+
+# --- CONFIG ---
+settings = get_settings()
 
 # --- SEARCH SCHEMAS ---
 
 class NovelSearchResult(BaseModel):
     """Schema for a single novel search result item."""
-    title: str = Field(..., example="Shadow Slave")
-    url: str = Field(..., example="https://royalroad.com/fiction/12345/novel")
-    cover: Optional[str] = Field(None, example="https://cdn.com/cover.jpg")
-    chapters_count: Optional[str] = Field("N/A", example="1500 Chapters")
+    title: str = Field(..., json_schema_extra={"example": "Shadow Slave"})
+    url: str = Field(..., json_schema_extra={"example": "https://royalroad.com/fiction/12345/novel"})
+    cover: Optional[str] = Field(None, json_schema_extra={"example": "https://cdn.com/cover.jpg"})
+    chapters_count: Optional[str] = Field("N/A", json_schema_extra={"example": "1500 Chapters"})
 
 
 class SearchResponse(BaseModel):
@@ -28,7 +31,7 @@ class EpubRequest(BaseModel):
     Useful if you decide to change from GET to POST later.
     """
     url: HttpUrl
-    qty: int = Field(default=1, ge=1, le=API_CONFIG["MAX_CHAPTERS_LIMIT"], description="Quantity of chapters to download")
+    qty: int = Field(default=1, ge=1, le=settings.MAX_CHAPTERS_LIMIT, description="Quantity of chapters to download")
     start: int = Field(default=1, ge=1, description="Starting chapter number")
 
 

@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from .base_book import BaseScraper
 from src.utils.logger import logger
 from src.schemas.novel_schema import BookMetadata, ChapterContent
+from src.utils.exceptions import ScraperParsingException
 
 class MyCentralNovelBook(BaseScraper):
     def __init__(self, *args, **kwargs) -> None:
@@ -33,8 +34,8 @@ class MyCentralNovelBook(BaseScraper):
             header = soup.select_one(self._selectors['meta_header'])
             if not header:
                 logger.error(f"[{self.class_name}] Could not find book header at {self._main_url}")
-                raise ValueError("Could not find the book header. Check the URL.")
-
+                raise ScraperParsingException("Could not find the book header. Check the URL.")
+                
             info_content = header.select_one(self._selectors['meta_info'])
             author_spans = info_content.find_all('span') if info_content else []
             author_text = author_spans[2].get_text(strip=True) if len(author_spans) > 2 else "Unknown Author"

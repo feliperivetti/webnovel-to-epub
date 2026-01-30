@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from .base_book import BaseScraper
 from src.utils.logger import logger
 from src.schemas.novel_schema import BookMetadata, ChapterContent
-
+from src.utils.exceptions import ScraperParsingException
 
 class MyRoyalRoadBook(BaseScraper):
     def __init__(self, *args, **kwargs) -> None:
@@ -36,7 +36,7 @@ class MyRoyalRoadBook(BaseScraper):
             header = soup.find(*self._selectors['meta_header'])
             if not header:
                 logger.error(f"[{self.class_name}] Metadata header not found. Site layout might have changed.")
-                raise ValueError("Could not find the book header.")
+                raise ScraperParsingException("Could not find the book header. Site layout might have changed.")
 
             # Cover image extraction
             img_tag = header.find('img')
@@ -57,6 +57,7 @@ class MyRoyalRoadBook(BaseScraper):
                 book_cover_link=cover_link
             )
         except Exception as e:
+            # Raise custom exceptions up, wrap others if needed or let generic bubble up
             logger.error(f"[{self.class_name}] Error fetching metadata: {e}", exc_info=True)
             raise e
 

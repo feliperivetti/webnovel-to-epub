@@ -1,17 +1,18 @@
 import io, os, random, time
 import cloudscraper
+import requests
 import concurrent.futures
 from abc import ABC, abstractmethod
-from dotenv import load_dotenv
 
-from src.utils.constants import API_CONFIG, EPUB_STRINGS
+from src.utils.constants import EPUB_STRINGS
 from src.utils.logger import logger
+from src.config import get_settings
 from src.schemas.novel_schema import Novel, Chapter, BookMetadata, ChapterContent
+from src.utils.exceptions import NovelNotFoundException, ScraperParsingException, ChapterLimitException
 
 class BaseScraper(ABC):
     def __init__(self, main_url: str, chapters_quantity: int, start_chapter: int):
-        # Load variables from .env file into os.environ
-        load_dotenv()
+        self.settings = get_settings()
         
         self._main_url = main_url
         self._chapters_quantity = chapters_quantity
@@ -30,11 +31,10 @@ class BaseScraper(ABC):
         )
 
         # Proxy configuration
-        proxy_url = os.environ.get("PROXY_URL")
-        if proxy_url:
+        if self.settings.PROXY_URL:
             self._session.proxies = {
-                "http": proxy_url,
-                "https": proxy_url
+                "http": self.settings.PROXY_URL,
+                "https": self.settings.PROXY_URL
             }
             logger.info(f"[{self.class_name}] Proxy enabled from environment.")
         else:
@@ -66,6 +66,13 @@ class BaseScraper(ABC):
                 if not data or not data.content:
                     raise ValueError("Main content is empty or not found.")
                 return data
+            except requests.exceptions.HTTPError as e:
+                 if e.response.status_code == 404:
+                     logger.error(f"[{self.class_name}] Chapter 404 Not Found: {url}")
+                     # BaseScraper expects exception to trigger retry or fallback.
+                     # But 404 on chapter usually means it's gone.
+                     raise e
+                 raise e
             except Exception as e:
                 # ... existing retry logic ...
                 if i < max_retries - 1:
@@ -76,32 +83,60 @@ class BaseScraper(ABC):
                 logger.error(f"[{self.class_name}] Max retries reached for: {url}")
                 raise e
 
-    def scrape_novel(self) -> Novel:
-        """Main process to orchestrate scraping and return a Novel object."""
+    def scrape_novel(self, progress_callback=None) -> Novel:
+        """
+        Main process to orchestrate scraping and return a Novel object.
+        :param progress_callback: Optional async or sync function(progress: int) -> None
+        """
         start_time = time.time()
         logger.info(f"[{self.class_name}] Starting Scrape for: {self._main_url}")
 
+        if progress_callback:
+            # Report initial progress
+            progress_callback(5)
+
         # 1. Metadata Extraction
         try:
+        # ... (metadata logic matches existing) ...
             # Now expects a Pydantic Model directly
             book_metadata = self.get_book_metadata()
             self.book_title = book_metadata.book_title
             
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                 logger.error(f"[{self.class_name}] Novel not found (404): {self._main_url}")
+                 raise NovelNotFoundException(f"Novel not found at {self._main_url}")
+            raise e
         except Exception as e:
             logger.error(f"[{self.class_name}] Critical failure fetching metadata: {e}", exc_info=True)
             raise e
         
-        chapter_urls = self.get_chapters_link()
+        if progress_callback:
+            progress_callback(10)
+
+        # ... (chapters selection) ...
+        try:
+            chapter_urls = self.get_chapters_link()
+        except ValueError as e:
+            # Often subclasses raise ValueError for invalid range/empty chapters
+            raise ChapterLimitException(str(e))
+        except Exception as e:
+             raise e
+
         total_to_download = len(chapter_urls)
         
         logger.info(f"[{self.class_name}] Metadata loaded: '{self.book_title}' | Total chapters: {total_to_download}")
 
+        if progress_callback:
+            progress_callback(15)
+
         # 2. Download Cover Image (Optional)
+        # ... (cover download logic) ...
         cover_bytes = None
         if book_metadata.book_cover_link and book_metadata.book_cover_link.startswith('http'):
             try:
                 logger.info(f"[{self.class_name}] Downloading cover: {book_metadata.book_cover_link}")
-                cover_res = self._session.get(book_metadata.book_cover_link, timeout=API_CONFIG["DEFAULT_TIMEOUT"])
+                cover_res = self._session.get(book_metadata.book_cover_link, timeout=self.settings.DEFAULT_TIMEOUT)
                 cover_res.raise_for_status()
                 cover_bytes = cover_res.content
             except Exception as e:
@@ -109,13 +144,13 @@ class BaseScraper(ABC):
 
         # 3. Parallel Chapter Download
         chapters: list[Chapter] = []
-        # Create a list of None to store results in order
         chapters_data_results = [None] * total_to_download
         
         completed_count = 0
+        # Calculate checkpoints for logging (every 10%)
         checkpoints = {max(1, int(total_to_download * (i / 10))) for i in range(1, 11)}
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=API_CONFIG["MAX_WORKERS"]) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.settings.MAX_WORKERS) as executor:
             future_to_index = {
                 executor.submit(self._fetch_with_retry, url): i 
                 for i, url in enumerate(chapter_urls)
@@ -124,18 +159,25 @@ class BaseScraper(ABC):
             for future in concurrent.futures.as_completed(future_to_index):
                 index = future_to_index[future]
                 try:
-                    # Result is now a ChapterContent object
                     result = future.result()
                     chapters_data_results[index] = result
                 except Exception as e:
                     logger.error(f"[{self.class_name}] Error on chapter {index+1}: {e}")
-                    # Fallback for error
                     chapters_data_results[index] = ChapterContent(
                         title=f'Error Chapter {index+1}', 
                         content=EPUB_STRINGS["error_content"]
                     )
                 
                 completed_count += 1
+                
+                # Progress Logic
+                # Scale from 15% to 95% based on chapter download
+                # 15 + (count/total * 80)
+                if total_to_download > 0:
+                    current_pct = 15 + int((completed_count / total_to_download) * 80)
+                    if progress_callback:
+                        progress_callback(current_pct)
+
                 if completed_count in checkpoints or completed_count == total_to_download:
                     percentage = (completed_count / total_to_download) * 100
                     logger.info(f"[{self.class_name}] Progress: {percentage:.0f}% ({completed_count}/{total_to_download})")

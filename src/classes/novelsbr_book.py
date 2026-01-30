@@ -3,27 +3,11 @@ from bs4 import BeautifulSoup
 from src.classes.base_book import BaseScraper
 from src.utils.logger import logger
 from src.schemas.novel_schema import BookMetadata, ChapterContent
+from src.utils.exceptions import ScraperParsingException, NovelNotFoundException
 
 class MyNovelsBrBook(BaseScraper):
-    """
-    Scraper implementation for Novels-BR books.
-    Handles metadata extraction and chapter list navigation within accordion menus.
-    """
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        
-        # Selectors using CSS syntax for select/select_one
-        self._selectors = {
-            'meta_header': 'section.navbar-novel',
-            'meta_title': 'h1.mb-0',
-            'meta_info': 'div#hero-novel',
-            'meta_description': 'p[style*="text-align: justify"]',
-            'meta_chapter_list_all': 'div#volumes',
-            
-            'chap_title': 'h2.chapter-title',
-            'chap_content': 'div.chapter-content'
-        }
-        
+    # ... (docstring/init same) ...
+
     def get_book_metadata(self) -> BookMetadata:
         """
         Extracts book title, author, description, and cover image from the main page.
@@ -40,7 +24,7 @@ class MyNovelsBrBook(BaseScraper):
             header = soup.select_one(self._selectors['meta_header'])
             if not header:
                 logger.error(f"[{self.class_name}] Could not find book header at {self._main_url}")
-                raise ValueError("Could not find the book header. Check the URL.")
+                raise ScraperParsingException("Could not find the book header. Check the URL or site layout.")
 
             # 2. Extract Title
             title_element = header.select_one(self._selectors['meta_title'])

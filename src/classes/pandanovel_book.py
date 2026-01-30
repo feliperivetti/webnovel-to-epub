@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from src.classes.base_book import BaseScraper
 from src.utils.logger import logger
 from src.schemas.novel_schema import BookMetadata, ChapterContent
-
+from src.utils.exceptions import ScraperParsingException, NovelNotFoundException
 
 class MyPandaNovelBook(BaseScraper):
     def __init__(self, *args, **kwargs) -> None:
@@ -33,7 +33,7 @@ class MyPandaNovelBook(BaseScraper):
             header = soup.find(*self._selectors['meta_header'])
             if not header:
                 logger.error(f"[{self.class_name}] Header not found. Site layout might have changed at {self._main_url}")
-                raise ValueError("Could not find the novel header.")
+                raise ScraperParsingException("Could not find the novel header.")
 
             info = header.find(*self._selectors['meta_info'])
             img_tag = header.find('img')
@@ -93,7 +93,7 @@ class MyPandaNovelBook(BaseScraper):
         
         if response.status_code == 404:
             logger.error(f"[{self.class_name}] Chapter 404 Not Found: {url}")
-            raise ValueError(f"Chapter at URL {url} was not found (404).")
+            raise NovelNotFoundException(f"Chapter at URL {url} was not found (404).")
             
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')

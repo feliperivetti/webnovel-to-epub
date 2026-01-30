@@ -1,23 +1,21 @@
 import time
-import os
 import uvicorn
 import requests
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 from jose import jwt, JWTError
 from src.routes import book_routes, search_routes
 from src.utils.logger import logger
+from src.config import get_settings
 
-
-# --- LOAD ENVIRONMENT VARIABLES ---
-load_dotenv()
+# --- LOAD SETTINGS ---
+settings = get_settings()
 
 # --- JWT CONFIGURATION ---
-API_JWT_SECRET = os.environ.get("API_JWT_SECRET")
 ALGORITHM = "HS256"
 security = HTTPBearer()
+
 async def verify_internal_token(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> dict:
@@ -25,14 +23,15 @@ async def verify_internal_token(
     Validates the internal JWT signed by the Edge Function.
     Returns the token payload if valid.
     """
-    if not API_JWT_SECRET:
+    if not settings.API_JWT_SECRET:
         logger.warning("API_JWT_SECRET not configured - skipping validation (dev mode)")
         return {"sub": "dev", "tier": "premium", "action": "generate-epub"}
     
     token = credentials.credentials
     
     try:
-        payload = jwt.decode(token, API_JWT_SECRET, algorithms=[ALGORITHM])
+        # Use settings.API_JWT_SECRET instead of global variable
+        payload = jwt.decode(token, settings.API_JWT_SECRET, algorithms=[ALGORITHM])
         
         # Validate action (optional - for extra security)
         if payload.get("action") != "generate-epub":
@@ -47,10 +46,12 @@ async def verify_internal_token(
     
 # Initialize the FastAPI application with professional metadata
 app = FastAPI(
-    title="Novel Scraper API",
+    title=settings.APP_NAME,
     description="Professional API for scraping novels, searching sources, and generating EPUB files.",
     version="1.0.0"
 )
+
+# ... (middleware same) ...
 
 # --- CORS CONFIGURATION ---
 app.add_middleware(
@@ -71,7 +72,9 @@ async def add_process_time_header(request: Request, call_next):
     process_time = time.perf_counter() - start_time
     response.headers["X-Process-Time"] = f"{process_time:.4f} sec"
     
-    print(f"⏱️  Path: {request.url.path} | Method: {request.method} | Duration: {process_time:.4f}s")
+    # Optional: only print if DEBUG is true, or keep always
+    if settings.DEBUG:
+        print(f"⏱️  Path: {request.url.path} | Method: {request.method} | Duration: {process_time:.4f}s")
     
     return response
 
@@ -88,7 +91,7 @@ app.include_router(search_routes.router)  # Search stays public
 def health_check():
     return {
         "status": "online",
-        "message": "Novel Scraper API is running smoothly",
+        "message": f"{settings.APP_NAME} is running smoothly",
         "timestamp": time.time(),
         "docs": "/docs"
     }
@@ -100,7 +103,7 @@ def debug_proxy():
     Check which IP address is being used by the server. 
     Helps verify if the PROXY_URL is correctly applied on Render.
     """
-    proxy_url = os.environ.get("PROXY_URL")
+    proxy_url = settings.PROXY_URL
     proxies = {
         "http": proxy_url,
         "https": proxy_url
@@ -131,7 +134,7 @@ def debug_proxy():
 @app.get("/debug-headers")
 def debug_headers():
     import cloudscraper
-    proxy = os.environ.get("PROXY_URL")
+    proxy = settings.PROXY_URL
     proxies = {"http": proxy, "https": proxy}
     
     # Usando cloudscraper com os mesmos headers do seu service

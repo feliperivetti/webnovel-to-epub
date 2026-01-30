@@ -15,7 +15,9 @@ def test_generate_epub_endpoint(mocker):
     Test the full /books/generate-epub flow with mocked service and builder.
     """
     # 1. Mock the specific Provider Class used in the route
-    mock_service_cls = mocker.patch("src.routes.book_routes.RoyalRoadService")
+    # Since we use Registry now, we mock valid return from ScraperRegistry.get_service
+    mock_service_cls = MagicMock()
+    mocker.patch("src.services.registry.ScraperRegistry.get_service", return_value=mock_service_cls)
     mock_service = mock_service_cls.return_value
     
     # 2. Mock the scraper instance returned by the service

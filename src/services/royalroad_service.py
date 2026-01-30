@@ -1,8 +1,10 @@
 from bs4 import BeautifulSoup
 from src.services.base_service import BaseService
 from src.classes.royalroad_book import MyRoyalRoadBook
+from src.services.registry import ScraperRegistry
 from src.utils.logger import logger
 
+@ScraperRegistry.register("royalroad.com")
 class RoyalRoadService(BaseService):
     """
     Service responsible for interacting with Royal Road website.

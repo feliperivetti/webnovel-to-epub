@@ -4,7 +4,9 @@ from bs4 import BeautifulSoup
 from src.services.base_service import BaseService
 from src.classes.centralnovel_book import MyCentralNovelBook
 from src.utils.logger import logger
+from src.services.registry import ScraperRegistry
 
+@ScraperRegistry.register("centralnovel.com")
 class CentralNovelService(BaseService):
     """
     Service responsible for interacting with Central Novel.

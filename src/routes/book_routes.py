@@ -8,6 +8,7 @@ from src.services.novelsbr_service import NovelsBrService
 from src.services.pandanovel_service import PandaNovelService
 from src.services.royalroad_service import RoyalRoadService
 
+from src.services.registry import ScraperRegistry
 from src.utils.constants import API_CONFIG
 from src.utils.logger import logger
 
@@ -32,38 +33,26 @@ def generate_epub(
     """
     logger.info(f"🚀 Initializing EPUB generation | URL: {url} | Qty: {qty} | Start: {start}")
     
-    # 1. Map domains to Service Classes
-    providers = {
-        "centralnovel.com": CentralNovelService,
-        "novels-br.com": NovelsBrService,
-        "pandanovel.co": PandaNovelService,
-        "novelfire.net": PandaNovelService,
-        "royalroad.com": RoyalRoadService
-    }
-
-    # 2. Identify the correct provider
-    service_class = None
-    for domain, cls in providers.items():
-        if domain in url.lower():
-            service_class = cls
-            break
+    # 1. Use Registry to Find Provider
+    service_class = ScraperRegistry.get_service(url)
 
     if not service_class:
+        supported_domains = ", ".join(ScraperRegistry.get_registered_domains())
         logger.warning(f"⚠️ Unsupported domain requested: {url}")
         raise HTTPException(
             status_code=400, 
-            detail="Source not supported. Supported domains: royalroad.com, centralnovel.com, pandanovel.co, novelfire.net"
+            detail=f"Source not supported. Supported domains: {supported_domains}"
         )
 
     try:
-        # 3. Instantiate the service and get the book scraper instance
+        # 2. Instantiate the service and get the book scraper instance
         service = service_class()
         scraper = service.get_book_instance(url, qty, start)
 
-        # 4. Scrape Data (SRP: Scraper only returns data)
+        # 3. Scrape Data (SRP: Scraper only returns data)
         novel_data = scraper.scrape_novel()
         
-        # 5. Build EPUB (SRP: Builder only acts on data)
+        # 4. Build EPUB (SRP: Builder only acts on data)
         result_buffer = EpubBuilder.create_epub(novel_data)
 
         # Handle both raw bytes and BytesIO objects to avoid "bytes-like object required" error
@@ -74,7 +63,7 @@ def generate_epub(
             final_stream = result_buffer
             final_stream.seek(0)
             
-        # 6. Filename Sanitization
+        # 5. Filename Sanitization
         book_title = novel_data.metadata.book_title
         filename_raw = f"{book_title}.epub"
         # Keep alphanumeric, spaces, dots, and hyphens

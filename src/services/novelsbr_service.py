@@ -3,9 +3,11 @@ import sys
 import os
 from bs4 import BeautifulSoup
 from src.services.base_service import BaseService
+from src.services.registry import ScraperRegistry
 from src.classes.novelsbr_book import MyNovelsBrBook
 from src.utils.logger import logger
 
+@ScraperRegistry.register("novels-br.com")
 class NovelsBrService(BaseService):
     """
     Service responsible for interacting with Novels-BR.

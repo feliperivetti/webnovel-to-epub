@@ -1,8 +1,10 @@
 from bs4 import BeautifulSoup
 from src.services.base_service import BaseService
 from src.classes.pandanovel_book import MyPandaNovelBook
+from src.services.registry import ScraperRegistry
 from src.utils.logger import logger
 
+@ScraperRegistry.register("pandanovel.co", "novelfire.net")
 class PandaNovelService(BaseService):
     """
     Service responsible for interacting with PandaNovel.

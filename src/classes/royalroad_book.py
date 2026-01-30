@@ -1,9 +1,9 @@
 from bs4 import BeautifulSoup
-from .base_book import MyBook
+from .base_book import BaseScraper
 from src.utils.logger import logger
 
 
-class MyRoyalRoadBook(MyBook):
+class MyRoyalRoadBook(BaseScraper):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         

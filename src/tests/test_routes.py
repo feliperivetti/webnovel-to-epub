@@ -2,24 +2,17 @@ import io
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock
-from src.main import app
-
-from fastapi.testclient import TestClient
-from unittest.mock import MagicMock
 from src.main import app, verify_internal_token
+from src.schemas.novel_schema import Novel, BookMetadata, Chapter
 
 client = TestClient(app)
 
 # Override the authentication dependency to bypass it during tests
 app.dependency_overrides[verify_internal_token] = lambda: {"sub": "test", "action": "generate-epub"}
 
-# Use patch to mock the Service and Scraper
-# We need to mock 'src.routes.book_routes.CentralNovelService' or whatever service is being called.
-# Since the route logic dynamically selects the service, we'll test the RoyalRoad path.
-
 def test_generate_epub_endpoint(mocker):
     """
-    Test the full /books/generate-epub flow with mocked service.
+    Test the full /books/generate-epub flow with mocked service and builder.
     """
     # 1. Mock the specific Provider Class used in the route
     mock_service_cls = mocker.patch("src.routes.book_routes.RoyalRoadService")
@@ -27,33 +20,43 @@ def test_generate_epub_endpoint(mocker):
     
     # 2. Mock the scraper instance returned by the service
     mock_scraper = MagicMock()
-    # Ensure book_title matches what the route expects for filename generation
-    mock_scraper.book_title = "My Test Novel" 
+    mock_service.get_book_instance.return_value = mock_scraper
     
-    # 3. Mock the create_epub_buffer method to return bytes
-    fake_epub_content = b"PK\x03\x04..." # Minimal zip signature approximation
-    mock_scraper.create_epub_buffer.return_value = io.BytesIO(fake_epub_content)
+    # 3. Mock scraper.scrape_novel() to return a valid Novel object
+    mock_novel = Novel(
+        metadata=BookMetadata(
+            book_title="My Test Novel", 
+            book_author="Test Author", 
+            book_description="Desc"
+        ), 
+        chapters=[Chapter(index=1, title="Ch1", content="<p>Content</p>")]
+    )
+    mock_scraper.scrape_novel.return_value = mock_novel
+    
+    # 4. Mock EpubBuilder to return a byte buffer
+    fake_epub_content = b"PK\x03\x04..." # Minimal zip signature
+    mock_builder = mocker.patch("src.routes.book_routes.EpubBuilder")
+    mock_builder.create_epub.return_value = io.BytesIO(fake_epub_content)
     
     # Connect the scraper to the service
     mock_service.get_book_instance.return_value = mock_scraper
     
-    # 4. Make the request
-    # Since we have JWT auth enabled using Depends(verify_internal_token), 
-    # and verifying_internal_token checks API_JWT_SECRET env var.
-    # If API_JWT_SECRET is missing, it skips validation (returns "dev" user).
-    # Assuming dev environment for tests or we can mock the dependency override.
-    
+    # 5. Make the request
     response = client.get("/books/generate-epub", params={
         "url": "https://www.royalroad.com/fiction/12345/test-novel",
         "qty": 5,
         "start": 1
     })
     
-    # 5. Assertions
+    # 6. Assertions
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/epub+zip"
     assert "My Test Novel.epub" in response.headers["content-disposition"]
     assert response.content == fake_epub_content
+    
+    # Verify calls
+    mock_scraper.scrape_novel.assert_called_once()
+    mock_builder.create_epub.assert_called_once_with(mock_novel)
 
 def test_generate_epub_invalid_domain():
     """

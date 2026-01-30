@@ -3,13 +3,12 @@ import cloudscraper
 import concurrent.futures
 from abc import ABC, abstractmethod
 from dotenv import load_dotenv
-from ebooklib import epub
 
-from src.utils.constants import API_CONFIG, EPUB_HTML_TEMPLATE, EPUB_STRINGS
+from src.utils.constants import API_CONFIG, EPUB_STRINGS
 from src.utils.logger import logger
+from src.schemas.novel_schema import Novel, Chapter, BookMetadata
 
-
-class MyBook(ABC):
+class BaseScraper(ABC):
     def __init__(self, main_url: str, chapters_quantity: int, start_chapter: int):
         # Load variables from .env file into os.environ
         load_dotenv()
@@ -18,10 +17,10 @@ class MyBook(ABC):
         self._chapters_quantity = chapters_quantity
         self._start_chapter = start_chapter
         
-        # Identify which subclass is running (e.g., MyPandaNovelBook)
+        # Identify which subclass is running
         self.class_name = self.__class__.__name__
         
-        # Initialize cloudscraper to bypass Cloudflare/Wordfence
+        # Initialize cloudscraper
         self._session = cloudscraper.create_scraper(
             browser={
                 'browser': 'chrome',
@@ -30,7 +29,7 @@ class MyBook(ABC):
             }
         )
 
-        # Proxy configuration via Environment Variable
+        # Proxy configuration
         proxy_url = os.environ.get("PROXY_URL")
         if proxy_url:
             self._session.proxies = {
@@ -46,7 +45,7 @@ class MyBook(ABC):
 
     @abstractmethod
     def get_book_metadata(self) -> dict: 
-        """Must return a dict with book_title, book_author, book_description, book_cover_link."""
+        """Must return a dict compatible with BookMetadata."""
         pass
 
     @abstractmethod
@@ -69,83 +68,66 @@ class MyBook(ABC):
                 return data
             except Exception as e:
                 if i < max_retries - 1:
-                    # Exponential backoff: 5s, 10s... + jitter
                     wait_time = (2 ** i) * 5 + random.uniform(1, 2)
                     logger.warning(f"[{self.class_name}] Retry {i+1}/{max_retries} for: {url} | Error: {e} | Waiting {wait_time:.2f}s")
                     time.sleep(wait_time)
                     continue
-                
                 logger.error(f"[{self.class_name}] Max retries reached for: {url}")
                 raise e
 
-    def create_epub_buffer(self) -> io.BytesIO:
-        """Main process to orchestrate scraping and EPUB creation."""
+    def scrape_novel(self) -> Novel:
+        """Main process to orchestrate scraping and return a Novel object."""
         start_time = time.time()
-        logger.info(f"[{self.class_name}] Starting EPUB generation for: {self._main_url}")
+        logger.info(f"[{self.class_name}] Starting Scrape for: {self._main_url}")
 
         # 1. Metadata Extraction
         try:
-            metadata = self.get_book_metadata()
+            metadata_dict = self.get_book_metadata()
+            # Ensure safety against None values
+            meta_title = metadata_dict.get('book_title', 'Unknown')
+            meta_author = metadata_dict.get('book_author', 'Unknown Author')
+            meta_desc = metadata_dict.get('book_description', EPUB_STRINGS["default_no_description"])
+            
+            # Helper to Convert BeautifulSoup tags to string if needed
+            def to_str(value):
+                if value is None: return ""
+                return value.get_text(strip=True) if hasattr(value, 'get_text') else str(value)
+
+            self.book_title = to_str(meta_title)
+            
+            book_metadata = BookMetadata(
+                book_title=self.book_title,
+                book_author=to_str(meta_author),
+                book_description=to_str(meta_desc),
+                book_cover_link=to_str(metadata_dict.get('book_cover_link'))
+            )
+            
         except Exception as e:
             logger.error(f"[{self.class_name}] Critical failure fetching metadata: {e}", exc_info=True)
             raise e
-        
-        def to_str(value):
-            if value is None: return ""
-            return value.get_text(strip=True) if hasattr(value, 'get_text') else str(value)
-
-        self.book_title = to_str(metadata.get('book_title', 'Unknown'))
-        book_author = to_str(metadata.get('book_author', 'Unknown Author'))
-        book_description = to_str(metadata.get('book_description', EPUB_STRINGS["default_no_description"]))
-        cover_url = to_str(metadata.get('book_cover_link'))
         
         chapter_urls = self.get_chapters_link()
         total_to_download = len(chapter_urls)
         
         logger.info(f"[{self.class_name}] Metadata loaded: '{self.book_title}' | Total chapters: {total_to_download}")
 
-        # 2. Initialize EPUB object
-        book = epub.EpubBook()
-        book.set_identifier(f"id_{int(time.time())}")
-        book.set_title(self.book_title)
-        book.set_language('en')
-        book.add_author(book_author)
-        book.add_metadata('DC', 'description', book_description)
-
-        # 3. Handle Cover Image
-        if cover_url and cover_url.startswith('http'):
+        # 2. Download Cover Image (Optional)
+        cover_bytes = None
+        if book_metadata.book_cover_link and book_metadata.book_cover_link.startswith('http'):
             try:
-                logger.info(f"[{self.class_name}] Downloading cover: {cover_url}")
-                cover_res = self._session.get(cover_url, timeout=API_CONFIG["DEFAULT_TIMEOUT"])
+                logger.info(f"[{self.class_name}] Downloading cover: {book_metadata.book_cover_link}")
+                cover_res = self._session.get(book_metadata.book_cover_link, timeout=API_CONFIG["DEFAULT_TIMEOUT"])
                 cover_res.raise_for_status()
-                book.set_cover("cover.jpg", cover_res.content)
+                cover_bytes = cover_res.content
             except Exception as e:
-                logger.warning(f"[{self.class_name}] Failed to set cover image: {e}")
+                logger.warning(f"[{self.class_name}] Failed to download cover image: {e}")
 
-        # 4. Create Essential Pages
-        desc_page = epub.EpubHtml(title=EPUB_STRINGS["synopsis_title"], file_name='synopsis.xhtml', lang='en')
-        desc_page.set_content(EPUB_HTML_TEMPLATE.format(
-            title=EPUB_STRINGS["synopsis_title"],
-            content=f"<p>{book_description.replace(chr(10), '<br/>')}</p>"
-        ).encode('utf-8'))
-        book.add_item(desc_page)
-
-        disclaimer_page = epub.EpubHtml(title=EPUB_STRINGS["disclaimer_title"], file_name='disclaimer.xhtml', lang='en')
-        disclaimer_page.set_content(EPUB_HTML_TEMPLATE.format(
-            title=EPUB_STRINGS["disclaimer_title"],
-            content=EPUB_STRINGS["disclaimer_content"]
-        ).encode('utf-8'))
-        book.add_item(disclaimer_page)
-
-        # 5. Parallel Chapter Download with Progress Milestones
+        # 3. Parallel Chapter Download
+        chapters: list[Chapter] = []
+        # Create a list of None to store results in order
         chapters_data_results = [None] * total_to_download
-        logger.info(f"[{self.class_name}] Starting parallel download: {total_to_download} chapters | Workers: {API_CONFIG['MAX_WORKERS']}")
         
         completed_count = 0
-        errors_count = 0 
-
-        # Define os marcos de progresso (ex: a cada 10%)
-        # Usamos um set para evitar duplicatas e garantir busca O(1)
         checkpoints = {max(1, int(total_to_download * (i / 10))) for i in range(1, 11)}
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=API_CONFIG["MAX_WORKERS"]) as executor:
@@ -157,65 +139,48 @@ class MyBook(ABC):
             for future in concurrent.futures.as_completed(future_to_index):
                 index = future_to_index[future]
                 try:
-                    chapters_data_results[index] = future.result()
+                    result = future.result()
+                    chapters_data_results[index] = result
                 except Exception as e:
-                    errors_count += 1
                     logger.error(f"[{self.class_name}] Error on chapter {index+1}: {e}")
                     chapters_data_results[index] = {
                         'chapter_title': f'Error Chapter {index+1}', 
                         'main_content': EPUB_STRINGS["error_content"]
                     }
                 
-                # Incrementa o contador e verifica se atingiu um marco
                 completed_count += 1
                 if completed_count in checkpoints or completed_count == total_to_download:
                     percentage = (completed_count / total_to_download) * 100
                     logger.info(f"[{self.class_name}] Progress: {percentage:.0f}% ({completed_count}/{total_to_download})")
 
-        # FINAL SUMMARY LOG
-        if errors_count == 0:
-            logger.info(f"[{self.class_name}] All chapters downloaded successfully.")
-        else:
-            logger.warning(f"[{self.class_name}] Download finished with {errors_count} errors.")
-
-        # 6. Assemble EPUB Structure
-        epub_chapters = []
+        # 4. Assemble Chapter Objects
         for i, data in enumerate(chapters_data_results):
             if not data: continue
+            
+            # Helper again
+            def to_str(value):
+                if value is None: return ""
+                return value.get_text(strip=True) if hasattr(value, 'get_text') else str(value)
             
             title = to_str(data.get('chapter_title', f'Chapter {i + 1}'))
             content_node = data.get('main_content')
             raw_html = content_node.decode_contents() if hasattr(content_node, 'decode_contents') else str(content_node)
 
-            chapter = epub.EpubHtml(title=title, file_name=f'chap_{i + 1}.xhtml', lang='en')
-            chapter.set_content(EPUB_HTML_TEMPLATE.format(
+            chapters.append(Chapter(
+                index=i+1,
                 title=title,
                 content=raw_html
-            ).encode('utf-8'))
+            ))
+
+        if not chapters:
+            logger.critical(f"[{self.class_name}] Scrape failed: No chapters collected.")
+            raise ValueError("No chapters found.")
             
-            book.add_item(chapter)
-            epub_chapters.append(chapter)
-
-        if not epub_chapters:
-            logger.critical(f"[{self.class_name}] Generation failed: No chapters collected.")
-            raise ValueError("No chapters found to build the EPUB.")
-
-        # 7. Structure TOC and Spine
-        book.toc = (
-            (epub.Section('Essential Information'), (desc_page, disclaimer_page)),
-            (epub.Section('Table of Contents'), tuple(epub_chapters)),
-        )
-        book.add_item(epub.EpubNcx())
-        book.add_item(epub.EpubNav())
-        book.spine = ['nav', desc_page, disclaimer_page] + epub_chapters
-
-        # 8. Save to Buffer
-        buffer = io.BytesIO()
-        epub.write_epub(buffer, book, {})
-        buffer.seek(0)
-        
         total_time = time.time() - start_time
-        logger.info(f"[{self.class_name}] DONE: '{self.book_title}' generated in {total_time:.2f}s")
-        
-        return buffer
-    
+        logger.info(f"[{self.class_name}] DONE: Scraped '{self.book_title}' in {total_time:.2f}s")
+
+        return Novel(
+            metadata=book_metadata,
+            chapters=chapters,
+            cover_image_bytes=cover_bytes
+        )

@@ -45,3 +45,18 @@ class BookMetadata(BaseModel):
 class ErrorMessage(BaseModel):
     """Standardized error message schema."""
     detail: str
+
+
+# --- INTERNAL DATA MODELS (SRP) ---
+
+class Chapter(BaseModel):
+    """Represents a single chapter's content."""
+    index: int
+    title: str
+    content: str  # HTML content
+
+class Novel(BaseModel):
+    """Represents the complete novel data ready for export."""
+    metadata: BookMetadata
+    chapters: List[Chapter]
+    cover_image_bytes: Optional[bytes] = None  # Raw bytes of the cover image

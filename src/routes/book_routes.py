@@ -15,6 +15,11 @@ from src.utils.logger import logger
 router = APIRouter(prefix="/books", tags=["Books"])
 
 
+from src.services.epub_builder import EpubBuilder
+
+# ... imports ...
+
+
 @router.get("/generate-epub")
 def generate_epub(
     url: str = Query(..., description="The full URL of the novel series"),
@@ -55,8 +60,11 @@ def generate_epub(
         service = service_class()
         scraper = service.get_book_instance(url, qty, start)
 
-        # 4. Process chapters and get the buffer
-        result_buffer = scraper.create_epub_buffer()
+        # 4. Scrape Data (SRP: Scraper only returns data)
+        novel_data = scraper.scrape_novel()
+        
+        # 5. Build EPUB (SRP: Builder only acts on data)
+        result_buffer = EpubBuilder.create_epub(novel_data)
 
         # Handle both raw bytes and BytesIO objects to avoid "bytes-like object required" error
         if isinstance(result_buffer, bytes):
@@ -65,9 +73,9 @@ def generate_epub(
             # If it's already a BytesIO object, ensure cursor is at the start
             final_stream = result_buffer
             final_stream.seek(0)
-
-        # 5. Filename Sanitization
-        book_title = getattr(scraper, 'book_title', 'novel_ebook')
+            
+        # 6. Filename Sanitization
+        book_title = novel_data.metadata.book_title
         filename_raw = f"{book_title}.epub"
         # Keep alphanumeric, spaces, dots, and hyphens
         filename_clean = re.sub(r'[^\w\s.-]', '', filename_raw).strip()

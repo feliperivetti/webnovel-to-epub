@@ -1,9 +1,9 @@
 import time
 from bs4 import BeautifulSoup
-from src.classes.base_book import MyBook
+from src.classes.base_book import BaseScraper
 from src.utils.logger import logger
 
-class MyNovelsBrBook(MyBook):
+class MyNovelsBrBook(BaseScraper):
     """
     Scraper implementation for Novels-BR books.
     Handles metadata extraction and chapter list navigation within accordion menus.

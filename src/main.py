@@ -13,11 +13,15 @@ from src.config import get_settings
 settings = get_settings()
 
 # --- JWT CONFIGURATION ---
+from typing import Optional
+
+# --- JWT CONFIGURATION ---
 ALGORITHM = "HS256"
-security = HTTPBearer()
+# Set auto_error=False to allow us to handle missing tokens manually in verify_internal_token
+security = HTTPBearer(auto_error=False)
 
 async def verify_internal_token(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ) -> dict:
     """
     **JWT Validator for Internal Communication**
@@ -34,6 +38,9 @@ async def verify_internal_token(
         logger.warning("API_JWT_SECRET not configured - skipping validation (dev mode)")
         return {"sub": "dev", "tier": "premium", "action": "generate-epub"}
     
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Missing Authorization Header")
+
     token = credentials.credentials
     
     try:

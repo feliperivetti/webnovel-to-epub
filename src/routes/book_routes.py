@@ -125,9 +125,21 @@ async def background_epub_generation(task_id: str, url: str, qty: int, start: in
 )
 async def start_generation_task(
     background_tasks: BackgroundTasks,
-    url: str = Query(..., description="The full URL of the novel series to scrape (e.g., https://royalroad.com/fiction/...)"),
-    qty: int = Query(default=1, ge=1, le=settings.MAX_CHAPTERS_LIMIT, description="Number of chapters to download (Max: 50)"),
-    start: int = Query(default=1, ge=1, description="Starting chapter number (1-indexed)")
+    url: str = Query(..., 
+        description="The full URL of the novel series to scrape",
+        openapi_examples={
+            "RoyalRoad": {
+                "summary": "Royal Road Example",
+                "value": "https://www.royalroad.com/fiction/21220/mother-of-learning"
+            },
+            "PandaNovel": {
+                "summary": "Panda Novel Example",
+                "value": "https://novelfire.net/book/shadow-slave"
+            }
+        }
+    ),
+    qty: int = Query(default=1, ge=1, le=settings.MAX_CHAPTERS_LIMIT, description="Number of chapters to download", openapi_examples={"Default": {"value": 1}, "Batch": {"value": 5}}),
+    start: int = Query(default=1, ge=1, description="Starting chapter number", openapi_examples={"Beginning": {"value": 1}})
 ):
     """
     **Start EPUB Generation Task**

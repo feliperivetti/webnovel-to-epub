@@ -8,7 +8,11 @@ from src.utils.constants import EPUB_STRINGS
 from src.utils.logger import logger
 from src.config import get_settings
 from src.schemas.novel_schema import Novel, Chapter, BookMetadata, ChapterContent
-from src.utils.exceptions import NovelNotFoundException, ScraperParsingException, ChapterLimitException
+from src.services.metrics_service import benchmark_scraper
+
+# ... (imports)
+
+
 
 class BaseScraper(ABC):
     def __init__(self, main_url: str, chapters_quantity: int, start_chapter: int):
@@ -70,6 +74,19 @@ class BaseScraper(ABC):
                  if e.response.status_code == 404:
                      logger.error(f"[{self.class_name}] Chapter 404 Not Found: {url}")
                      raise e
+                 # Special handling for Rate Limits (429)
+                 # Special handling for Rate Limits (429)
+                 if e.response.status_code == 429:
+                     # Only retry if we have retries left
+                     if i < max_retries - 1:
+                        # Reduced backoff: Assuming rotating proxy, we just need a new IP.
+                        wait_time = 3.0 * (i + 1) + random.uniform(0, 1)
+                        logger.warning(f"[{self.class_name}] 429 Too Many Requests. Cooling down for {wait_time:.1f}s... (Attempt {i+1}/{max_retries})")
+                        time.sleep(wait_time)
+                        continue
+                     # If last retry, fall through to re-raise logic
+                     pass
+                 raise e
                  raise e
             except (requests.exceptions.ProxyError, requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as e:
                 # Proxy Failover Logic
@@ -104,6 +121,7 @@ class BaseScraper(ABC):
                 logger.error(f"[{self.class_name}] Max retries reached for: {url}")
                 raise e
 
+    @benchmark_scraper
     def scrape_novel(self, progress_callback=None) -> Novel:
         """
         Main process to orchestrate scraping and return a Novel object.

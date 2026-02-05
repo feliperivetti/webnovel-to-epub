@@ -32,4 +32,5 @@ jobs:
         
     - name: Run Tests
       run: |
+        export PYTHONPATH=$PYTHONPATH:.
         pytest -v

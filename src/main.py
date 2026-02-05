@@ -8,6 +8,7 @@ from jose import jwt, JWTError
 from src.routes import book_routes, search_routes
 from src.utils.logger import logger
 from src.config import get_settings
+from src.services.registry import ScraperRegistry
 
 # --- LOAD SETTINGS ---
 settings = get_settings()
@@ -70,7 +71,11 @@ async def lifespan(app: FastAPI):
     # Run cleanup every hour (3600s)
     scheduler.add_job(cleanup_stale_files, 'interval', seconds=3600)
     scheduler.start()
+    scheduler.start()
     logger.info("🕒 Scheduler started: File cleanup job scheduled (every 1h).")
+
+    # Discover and register scrapers
+    ScraperRegistry.auto_discover()
     
     yield
     

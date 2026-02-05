@@ -11,10 +11,6 @@ from sse_starlette.sse import EventSourceResponse
 
 from src.schemas.novel_schema import TaskStartResponse, ErrorMessage
 
-from src.services.centralnovel_service import CentralNovelService
-from src.services.novelsbr_service import NovelsBrService
-from src.services.pandanovel_service import PandaNovelService
-from src.services.royalroad_service import RoyalRoadService
 
 from src.utils.exceptions import NovelNotFoundException, ScraperParsingException, ChapterLimitException
 

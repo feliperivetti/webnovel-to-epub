@@ -1,4 +1,9 @@
 from typing import Type, Dict, Any, Optional
+import importlib
+import pkgutil
+import inspect
+import pathlib
+from src.utils.logger import logger
 
 class ScraperRegistry:
     _registry: Dict[str, Type] = {}
@@ -34,3 +39,36 @@ class ScraperRegistry:
     @classmethod
     def get_registered_domains(cls) -> list[str]:
         return list(cls._registry.keys())
+
+    @classmethod
+    def auto_discover(cls, package_path: str = "src.services"):
+        """
+        Automatically discovers and imports all modules in the specified package.
+        This triggers the @register decorators in those files.
+        """
+        try:
+            # Import the package to get its path
+            import src.services as services_pkg
+            
+            # Use __path__ which is standard for packages (list of paths)
+            package_paths = services_pkg.__path__
+            
+            logger.info(f"[Registry] Discovering services in: {package_paths}")
+
+            count = 0
+            for _, name, _ in pkgutil.iter_modules(package_paths):
+                # Import the module
+                full_module_name = f"{package_path}.{name}"
+                try:
+                    importlib.import_module(full_module_name)
+                    count += 1
+                except Exception as e:
+                    logger.error(f"[Registry] Failed to import module {full_module_name}: {e}")
+            
+            logger.info(f"[Registry] Auto-discovery complete. Scanned {count} modules. Registered domains: {len(cls._registry)}")
+            
+        except ImportError as e:
+            logger.error(f"[Registry] Auto-discovery failed: {e}")
+        except Exception as e:
+            logger.error(f"[Registry] Unexpected error during auto-discovery: {e}")
+

@@ -1,4 +1,5 @@
-import io, os, random, time
+import random
+import time
 import cloudscraper
 import requests
 import concurrent.futures
@@ -9,7 +10,8 @@ from src.utils.logger import logger
 from src.config import get_settings
 from src.schemas.novel_schema import Novel, Chapter, BookMetadata, ChapterContent
 from src.services.metrics_service import benchmark_scraper
-
+from src.utils.exceptions import NovelNotFoundException, ChapterLimitException
+# Removed multiple statements on one line in later chunk if needed, but here we fix imports.
 
 class BaseScraper(ABC):
     def __init__(self, main_url: str, chapters_quantity: int, start_chapter: int):
@@ -223,7 +225,8 @@ class BaseScraper(ABC):
 
         # 4. Assemble Chapter Objects
         for i, data in enumerate(chapters_data_results):
-            if not data: continue
+            if not data:
+                continue
             
             # Data is already ChapterContent, no need to parse dicts
             chapters.append(Chapter(

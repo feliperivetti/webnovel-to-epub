@@ -1,7 +1,6 @@
 import uuid
 import time
 import os
-import shutil
 from typing import Dict, Optional, Any
 
 from src.utils.logger import logger

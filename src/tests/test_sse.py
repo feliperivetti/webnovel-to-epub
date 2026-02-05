@@ -1,10 +1,7 @@
 import pytest
-import asyncio
-from typing import AsyncGenerator
 from httpx import AsyncClient, ASGITransport
 from src.main import app, verify_internal_token
-from src.services.task_manager import TaskManager
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 import nest_asyncio
 
 nest_asyncio.apply()

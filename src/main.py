@@ -1,21 +1,28 @@
 import time
 import uvicorn
 import requests
+import os
+from typing import Optional
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from jose import jwt, JWTError
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 from src.routes import book_routes, search_routes
 from src.utils.logger import logger
 from src.config import get_settings
 from src.services.registry import ScraperRegistry
+from src.services.cleanup_service import cleanup_stale_files
+
+# --- LOAD SETTINGS ---
 
 # --- LOAD SETTINGS ---
 settings = get_settings()
 
 # --- JWT CONFIGURATION ---
-from typing import Optional
-
 # --- JWT CONFIGURATION ---
 ALGORITHM = "HS256"
 # Set auto_error=False to allow us to handle missing tokens manually in verify_internal_token
@@ -59,10 +66,6 @@ async def verify_internal_token(
         logger.error(f"❌ JWT validation failed: {e}")
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
     
-from contextlib import asynccontextmanager
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from src.services.cleanup_service import cleanup_stale_files
-
 # --- LIFESPAN MANAGER (Scheduler) ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):

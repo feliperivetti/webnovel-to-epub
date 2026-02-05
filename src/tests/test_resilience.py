@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 import requests
 from src.classes.base_book import BaseScraper
 from src.schemas.novel_schema import BookMetadata, ChapterContent

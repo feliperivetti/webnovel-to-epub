@@ -1,4 +1,3 @@
-import pytest
 from src.classes.pandanovel_book import MyPandaNovelBook
 from src.classes.novelsbr_book import MyNovelsBrBook
 from src.classes.centralnovel_book import MyCentralNovelBook

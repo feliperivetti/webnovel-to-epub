@@ -3,16 +3,14 @@ import tempfile
 import os
 import re
 import json
-from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException, Query, BackgroundTasks, Request, status
-from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
 from src.schemas.novel_schema import TaskStartResponse, ErrorMessage
 
 
-from src.utils.exceptions import NovelNotFoundException, ScraperParsingException, ChapterLimitException
 
 from src.services.registry import ScraperRegistry
 from src.utils.logger import logger

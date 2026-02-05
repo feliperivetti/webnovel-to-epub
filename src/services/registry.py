@@ -1,8 +1,6 @@
-from typing import Type, Dict, Any, Optional
+from typing import Type, Dict, Optional
 import importlib
 import pkgutil
-import inspect
-import pathlib
 from src.utils.logger import logger
 
 class ScraperRegistry:

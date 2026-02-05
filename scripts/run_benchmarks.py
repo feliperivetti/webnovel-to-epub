@@ -6,16 +6,12 @@ from unittest.mock import patch
 # Add project root to sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.services.registry import ScraperRegistry
-from src.config import get_settings
+from src.services.registry import ScraperRegistry  # noqa: E402
+from src.config import get_settings  # noqa: E402
 
 # Import services to trigger registration
-import src.services.centralnovel_service
-import src.services.novelsbr_service
-import src.services.pandanovel_service
-import src.services.royalroad_service
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # noqa: E402
 load_dotenv()
 
 # --- CONFIGURATIONS TO TEST ---
@@ -54,7 +50,7 @@ def run_benchmarks():
         print("Please add URLs to TEST_URLS list in scripts/run_benchmarks.py")
         return
 
-    print(f"Starting Benchmark Runner")
+    print("Starting Benchmark Runner")
     print(f"URLs: {len(TEST_URLS)} | Configs: {len(TEST_CONFIGS)} | Quantities: {len(TEST_QUANTITIES)}")
     print("="*80)
 

@@ -1,4 +1,3 @@
-import re
 import sys
 import os
 from bs4 import BeautifulSoup

@@ -1,4 +1,3 @@
-import os
 import time
 import tempfile
 from pathlib import Path
@@ -34,7 +33,7 @@ def cleanup_stale_files(max_age_seconds: int = 3600):
                     p.unlink()
                     count += 1
                     logger.debug(f"[Cleanup] Deleted stale file: {p.name}")
-            except Exception as e:
+            except Exception:
                 # Permission error or file in use
                 errors += 1
                 pass

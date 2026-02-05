@@ -14,7 +14,7 @@ def load_benchmarks():
         for line in f:
             try:
                 data.append(json.loads(line))
-            except:
+            except Exception:
                 continue
     return data
 

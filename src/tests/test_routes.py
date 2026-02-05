@@ -1,5 +1,4 @@
 import io
-import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock
 from src.main import app, verify_internal_token

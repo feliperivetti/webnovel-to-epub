@@ -58,7 +58,7 @@ class MetricsService:
                 for line in lines[-limit:]:
                     try:
                         data.append(json.loads(line))
-                    except:
+                    except Exception:
                         continue
         except Exception:
             return []

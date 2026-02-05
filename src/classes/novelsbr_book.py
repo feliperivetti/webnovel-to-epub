@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from src.classes.base_book import BaseScraper
 from src.utils.logger import logger
 from src.schemas.novel_schema import BookMetadata, ChapterContent
-from src.utils.exceptions import ScraperParsingException, NovelNotFoundException
+from src.utils.exceptions import ScraperParsingException
 
 class MyNovelsBrBook(BaseScraper):
     def __init__(self, *args, **kwargs) -> None:

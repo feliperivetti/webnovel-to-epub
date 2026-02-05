@@ -1,37 +1,58 @@
-# Use an official lightweight Python image
-FROM python:3.11-slim
+# Stage 1: Builder
+FROM python:3.11-slim as builder
 
-# Set environment variables
-# PYTHONDONTWRITEBYTECODE: Prevents Python from writing .pyc files to disc
-# PYTHONUNBUFFERED: Prevents Python from buffering stdout and stderr
+# Set environment variables for build
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies
-# These are required for compiling certain Python packages like lxml
+# Install system dependencies required for building Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libxml2-dev \
     libxslt-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first to leverage Docker cache
-COPY requirements.txt .
+# Create a virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies
+# Copy requirements and install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
+# Stage 2: Final
+FROM python:3.11-slim
+
+# Set environment variables for runtime
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
+
+# Copy the virtual environment from the builder stage
+COPY --from=builder /opt/venv /opt/venv
+
+# Install runtime system dependencies if needed (often none for slim, but verify if any libs are needed at runtime)
+# For webnovel-to-epub, we likely need libxml2 at runtime if lxml links dynamically, 
+# but often the wheels match the manylinux standard. 
+# However, to be safe and minimalistic, we try without first or add only runtime libs.
+# Actually, lxml often needs libxml2 and libxslt shared libraries at runtime.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libxml2 \
+    libxslt1.1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy application code
 COPY . .
 
-# Create necessary directories for the app to function
+# Create necessary directories
 RUN mkdir -p logs outputs
 
-# Expose the port the app runs on
+# Expose port
 EXPOSE 8000
 
-# Command to run the application using uvicorn
+# Command to run the application
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -15,16 +15,14 @@ import src.services.novelsbr_service
 import src.services.pandanovel_service
 import src.services.royalroad_service
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # --- CONFIGURATIONS TO TEST ---
 TEST_CONFIGS = [
     {
-        "name": "Local/Direct (2 Workers)",
-        "PROXY_URL": None,
-        "MAX_WORKERS": 2
-    },
-    {
         "name": "Fixed Proxy (2 Workers)",
-        "PROXY_URL": "http://zplnmdym:rk0w6ii0pa4a@84.247.60.125:6095/",
+        "PROXY_URL": "http://zplnmdym:rk0w6ii0pa4a@31.59.20.176:6754/",
         "MAX_WORKERS": 2
     },
     {
@@ -32,16 +30,6 @@ TEST_CONFIGS = [
         "PROXY_URL": "http://zplnmdym-rotate:rk0w6ii0pa4a@p.webshare.io:80/",
         "MAX_WORKERS": 2
     },
-    {
-        "name": "Rotating Proxy (4 Workers)",
-        "PROXY_URL": "http://zplnmdym-rotate:rk0w6ii0pa4a@p.webshare.io:80/",
-        "MAX_WORKERS": 4
-    },
-    # {
-    #     "name": "Rotating Proxy (8 Workers)",
-    #     "PROXY_URL": "http://zplnmdym-rotate:rk0w6ii0pa4a@p.webshare.io:80/",
-    #     "MAX_WORKERS": 8
-    # },
 ]
 
 # --- QUANTITIES TO TEST ---
@@ -55,8 +43,6 @@ TEST_QUANTITIES = [
 TEST_URLS = [
     "https://novelfire.net/book/shadow-slave",
     "https://novelfire.net/book/kill-the-sun",
-    "https://novelfire.net/book/advent-of-the-three-calamities",
-    "https://www.royalroad.com/fiction/21220/mother-of-learning",
     "https://www.royalroad.com/fiction/36735/the-perfect-run",
     "https://www.royalroad.com/fiction/92820/phantom-star"
 ]

@@ -10,9 +10,6 @@ from src.config import get_settings
 from src.schemas.novel_schema import Novel, Chapter, BookMetadata, ChapterContent
 from src.services.metrics_service import benchmark_scraper
 
-# ... (imports)
-
-
 
 class BaseScraper(ABC):
     def __init__(self, main_url: str, chapters_quantity: int, start_chapter: int):
@@ -74,14 +71,15 @@ class BaseScraper(ABC):
                  if e.response.status_code == 404:
                      logger.error(f"[{self.class_name}] Chapter 404 Not Found: {url}")
                      raise e
-                 # Special handling for Rate Limits (429)
-                 # Special handling for Rate Limits (429)
-                 if e.response.status_code == 429:
+                 # Special handling for Rate Limits (429) and IP Bans (403)
+                 if e.response.status_code in [429, 403]:
                      # Only retry if we have retries left
                      if i < max_retries - 1:
                         # Reduced backoff: Assuming rotating proxy, we just need a new IP.
+                        # For 403, we might want a slightly longer pause or just try again immediately if we trust the rotation.
                         wait_time = 3.0 * (i + 1) + random.uniform(0, 1)
-                        logger.warning(f"[{self.class_name}] 429 Too Many Requests. Cooling down for {wait_time:.1f}s... (Attempt {i+1}/{max_retries})")
+                        status_msg = "Rate Limit" if e.response.status_code == 429 else "IP Block"
+                        logger.warning(f"[{self.class_name}] {e.response.status_code} {status_msg}. Cooling down for {wait_time:.1f}s... (Attempt {i+1}/{max_retries})")
                         time.sleep(wait_time)
                         continue
                      # If last retry, fall through to re-raise logic

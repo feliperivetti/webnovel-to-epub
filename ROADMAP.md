@@ -1,40 +1,39 @@
 # Roadmap de Melhorias Técnicas 🚀
 
-Este documento rastreia ideias de otimização e refatoração para implementação futura.
+Este documento rastreia ideias de otimização, refatoração e novas funcionalidades para implementação futura.
 
-## 1. Otimização Docker (Multi-Stage Build)
-**Objetivo:** Reduzir o tamanho da imagem e aumentar a segurança.  
+## 🚧 Pendente / Em Andamento
+
+### 1. Finalização de Benchmarks
+**Objetivo:** Validar performance e escalabilidade.
 **Detalhes:**
-- Usar um estágio builder para instalar dependências de sistema (`build-essential`, `libxml2-dev`).
-- Copiar apenas os wheels ou ambiente virtual para o estágio final runner (`python-slim`).
-- Remover arquivos temporários e caches.  
-**Impacto:** Deploys mais rápidos e menor superfície de ataque.
+- Consolidar script de benchmark (`scripts/run_benchmarks.py`).
+- Executar testes de carga (Low/Medium/High) para comparar configurações (Proxies vs Direct).
+- Gerar relatório final de métricas (capítulos/segundo).
 
-## 2. Registry Auto-Discovery
-**Objetivo:** Eliminar a manutenção manual de imports no src/routes/book_routes.py.  
+## 🔮 Futuras Implementações
+
+### 2. Rate Limiting Global
+**Objetivo:** Evitar bloqueios por excesso de requisições.
 **Detalhes:**
-- Implementar um mecanismo que varre o diretório `src/classes/` ou `src/services/`.
-- Importar módulos dinamicamente e registrar classes decoradas com `@ScraperRegistry.register`.
-- Garantir que novos scrapers funcionem apenas criando o arquivo, sem alterar rotas.  
-**Impacto:** Escalabilidade "Plug & Play" para novos sites.
+- Implementar limitação de requisições por domínio (ex: 1 req/seg para RoyalRoad).
+- Usar token bucket ou leaky bucket algorithm.
+**Impacto:** Maior resiliência e menor risco de banimento de IP/Proxy.
 
-## 3. Pipeline CI/CD (GitHub Actions)
-**Objetivo:** Automatizar a garantia de qualidade.  
+### 3. Camada de Cache (Redis)
+**Objetivo:** Reduzir latência e requisições repetidas.
 **Detalhes:**
-- Criar `.github/workflows/test.yml`.
-- Trigger: push e pull_request na main.
-- Jobs:
-    - Setup Python.
-    - Install dependencies.
-    - Run Lint (Ruff/Black).
-    - Run Tests (`pytest -v`).  
-**Impacto:** Previne que código quebrado ou sem testes chegue à produção.
+- Cachear metadados de novels (título, autor, capa) por 24h.
+- Cachear lista de capítulos para evitar scraping repetido em curto período.
+**Impacto:** Resposta instantânea para livros populares.
 
-## 4. Novas Funcionalidades (Webnovel)
+### 4. Rota `novel-details`
+**Objetivo:** Enriquecer a experiência do frontend.
+**Detalhes:**
+- Endpoint dedicado para retornar sinopse, tags, status (em andamento/concluído) e estatísticas.
 
-### Rota `novel-details`
-- Implementar endpoint para obter detalhes específicos de uma novel (metadados avançados, sinopse, status, etc.).
-
-### Melhoria no Motor de Scraping
-- **Tecnologias Modernas com IA**: Investigar uso de LLMs ou ferramentas de visão computacional para extração de conteúdo em sites complexos.
-- **Densidade de Conteúdo**: Implementar algoritmos para detectar a área de texto principal e ignorar "ruído" (anúncios, menus) baseando-se na densidade de texto/HTML.
+### 5. Melhoria no Motor de Scraping (IA)
+**Objetivo:** Lidar com sites anti-scraping ou complexos.
+**Detalhes:**
+- Investigar uso de LLMs para extrair conteúdo de HTML sujo.
+- Algoritmos de densidade de texto para remover anúncios e menus automaticamente.

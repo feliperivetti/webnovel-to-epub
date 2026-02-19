@@ -9,57 +9,71 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.services.registry import ScraperRegistry  # noqa: E402
 from src.config import get_settings  # noqa: E402
 
-# Import services to trigger registration
-
 from dotenv import load_dotenv  # noqa: E402
+
+# --- INITIALIZATION ---
 load_dotenv()
+ScraperRegistry.auto_discover()
+settings = get_settings()
 
 # --- CONFIGURATIONS TO TEST ---
+# We dynamicallly build this from environment or defaults
 TEST_CONFIGS = [
     {
-        "name": "Fixed Proxy (2 Workers)",
-        "PROXY_URL": "http://zplnmdym:rk0w6ii0pa4a@31.59.20.176:6754/",
-        "MAX_WORKERS": 2
-    },
-    {
-        "name": "Rotating Proxy (2 Workers)",
-        "PROXY_URL": "http://zplnmdym-rotate:rk0w6ii0pa4a@p.webshare.io:80/",
-        "MAX_WORKERS": 2
-    },
+        "name": "Direct (No Proxy)",
+        "PROXY_URL": None,
+        "MAX_WORKERS": settings.MAX_WORKERS
+    }
 ]
+
+# Add Main Proxy if configured
+if settings.PROXY_URL:
+    TEST_CONFIGS.append({
+        "name": "Primary Proxy",
+        "PROXY_URL": settings.PROXY_URL,
+        "MAX_WORKERS": settings.MAX_WORKERS
+    })
+
+# Add Fallback Proxy if different
+if settings.PROXY_URL_FALLBACK and settings.PROXY_URL_FALLBACK != settings.PROXY_URL:
+    TEST_CONFIGS.append({
+        "name": "Fallback Proxy",
+        "PROXY_URL": settings.PROXY_URL_FALLBACK,
+        "MAX_WORKERS": settings.MAX_WORKERS
+    })
 
 # --- QUANTITIES TO TEST ---
 TEST_QUANTITIES = [
     {"label": "Low", "qty": 10},
     {"label": "Medium", "qty": 100},
-    {"label": "High", "qty": 350}
+    # {"label": "High", "qty": 350} # Slow for regular runs
 ]
 
-# --- PASTE LINKS HERE (Fixed Syntax) ---
+# --- TEST TARGETS ---
 TEST_URLS = [
     "https://novelfire.net/book/shadow-slave",
-    "https://novelfire.net/book/kill-the-sun",
     "https://www.royalroad.com/fiction/36735/the-perfect-run",
-    "https://www.royalroad.com/fiction/92820/phantom-star"
 ]
 
 START_CHAPTER = 1
 
 def run_benchmarks():
     if not TEST_URLS:
-        print("Please add URLs to TEST_URLS list in scripts/run_benchmarks.py")
+        print("Please add URLs to TEST_URLS list.")
         return
 
-    print("Starting Benchmark Runner")
+    print("🚀 Starting Benchmark Runner")
     print(f"URLs: {len(TEST_URLS)} | Configs: {len(TEST_CONFIGS)} | Quantities: {len(TEST_QUANTITIES)}")
     print("="*80)
 
+    total_start = time.time()
+
     for url in TEST_URLS:
-        print(f"\nTargeting: {url}")
+        print(f"\n📂 Targeting: {url}")
         
         service_class = ScraperRegistry.get_service(url)
         if not service_class:
-            print(f"Skipping unsupported URL: {url}")
+            print(f"❌ Skipping unsupported URL: {url}")
             continue
 
         for qty_conf in TEST_QUANTITIES:
@@ -69,49 +83,33 @@ def run_benchmarks():
             print(f"\n  [ {qty_label} Load: {qty} chapters ]")
             
             for config in TEST_CONFIGS:
-                print(f"    > Running {config['name']} ... ", end="", flush=True)
+                print(f"    > {config['name']:<20} ... ", end="", flush=True)
                 
-                # Strategy: Patch os.environ and clear lru_cache of get_settings
-                # This ensures Pydantic re-reads config from our injected env vars
-                
-                # Prepare Env Vars
-                env_update = {
-                    "MAX_WORKERS": str(config['MAX_WORKERS'])
-                }
-                if config['PROXY_URL']:
-                    env_update["PROXY_URL"] = config['PROXY_URL']
-                else:
-                    # If None, we want to remove it or set to empty. 
-                    # But Pydantic Optional[str] = None might treat "" as "".
-                    # Best to set it to "" or ensure it's not set. 
-                    # patch.dict allows us to set, but removing is trickier if we want to restore.
-                    # Actually patch.dict supports clear=False so we can overwrite.
-                    # We will set it to empty string if None, assuming config logic handles it.
-                    # Looking at src/classes/base_book.py: if self.settings.PROXY_URL:
-                    # An empty string is falsy, so it works.
-                    env_update["PROXY_URL"] = ""
+                run_start = time.time()
+                env_update = {"MAX_WORKERS": str(config['MAX_WORKERS'])}
+                env_update["PROXY_URL"] = config['PROXY_URL'] or ""
 
-                # Apply Patch
                 with patch.dict(os.environ, env_update):
-                    # Clear cache to force reload
                     get_settings.cache_clear()
                     
                     try:
-                        # Instantiate Scraper (will trigger get_settings() which reads fresh env)
                         service = service_class()
                         scraper = service.get_book_instance(url, qty, START_CHAPTER)
-                        
-                        # Run Scrape (Decorated with @benchmark_scraper)
                         scraper.scrape_novel()
-                        print("DONE ✅")
+                        
+                        elapsed = time.time() - run_start
+                        print(f"DONE ✅ ({elapsed:.2f}s)")
                     except Exception as e:
                         print(f"FAILED ❌ ({e})")
                     
-                    # Cleanup cache again just in case
                     get_settings.cache_clear()
                 
-                # Cool down to avoid ban between configs
-                time.sleep(2)
+                time.sleep(1) # Brief pause
+
+    total_elapsed = time.time() - total_start
+    print("\n" + "="*80)
+    print(f"✅ All benchmarks completed in {total_elapsed/60:.2f} minutes.")
+    print("Run 'python scripts/benchmark_viewer.py' to see analysis.")
 
     print("\nAll benchmarks completed. Run 'python scripts/benchmark_viewer.py' to see results.")
 

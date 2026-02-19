@@ -1,12 +1,16 @@
 import json
 import os
+import sys
 from datetime import datetime
+from collections import defaultdict
 
-FILE_PATH = "benchmarks.jsonl"
+# Fixed path resolution to find benchmarks.jsonl relative to project root
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FILE_PATH = os.path.join(BASE_DIR, "benchmarks.jsonl")
 
 def load_benchmarks():
     if not os.path.exists(FILE_PATH):
-        print("No benchmarks found yet.")
+        print(f"❌ No benchmarks found at {FILE_PATH}")
         return []
 
     data = []
@@ -18,24 +22,62 @@ def load_benchmarks():
                 continue
     return data
 
-def print_table(data):
-    # Header
-    print(f"{'TIMESTAMP':<20} | {'TARGET':<20} | {'CHAPTERS':<8} | {'DURATION':<10} | {'RATE (c/s)':<10} | {'CONFIG':<30}")
-    print("-" * 110)
+def print_summary(data):
+    if not data: return
+    
+    total_runs = len(data)
+    successes = [r for r in data if r.get('status') == 'success']
+    
+    print("\n📈 BENCHMARK SUMMARY")
+    print("-" * 40)
+    print(f"Total Runs:      {total_runs}")
+    print(f"Success Rate:    {(len(successes)/total_runs)*100:.1f}%")
+    
+    if successes:
+        avg_rate = sum(r.get('chapters_per_second', 0) for r in successes) / len(successes)
+        best_run = max(successes, key=lambda x: x.get('chapters_per_second', 0))
+        
+        print(f"Avg Rate:        {avg_rate:.2f} chapters/sec")
+        print(f"Best Perf:       {best_run.get('chapters_per_second')} c/s ({best_run.get('config', {}).get('proxy_mode')})")
 
-    for record in data:
-        ts = datetime.fromtimestamp(record.get('timestamp', 0)).strftime('%Y-%m-%d %H:%M:%S')
-        target = record.get('target_url', 'unknown')[:18]
+    # Group by Proxy Mode
+    proxy_stats = defaultdict(list)
+    for r in successes:
+        mode = r.get('config', {}).get('proxy_mode', 'unknown')
+        proxy_stats[mode].append(r.get('chapters_per_second', 0))
+    
+    print("\n🌍 PERFORMANCE BY PROXY MODE")
+    for mode, rates in proxy_stats.items():
+        avg = sum(rates) / len(rates)
+        print(f"  {mode:<12}: {avg:.2f} c/s avg")
+
+def print_detailed_table(data):
+    print("\n📋 DETAILED RUNS")
+    print(f"{'TIMESTAMP':<19} | {'DOMAIN':<15} | {'CHAPS':<5} | {'DUR':<6} | {'RATE':<8} | {'MODE'}")
+    print("-" * 80)
+
+    for record in reversed(data[-20:]): # Show last 20
+        ts = datetime.fromtimestamp(record.get('timestamp', 0)).strftime('%Y-%m-%d %H:%M')
+        
+        # Extract domain from URL
+        target = record.get('target_url', 'unknown')
+        domain = target.split('//')[-1].split('/')[0].replace('www.', '')[:15]
+        
         caps = record.get('chapters_count', 0)
         dur = f"{record.get('duration_s', 0)}s"
-        rate = record.get('chapters_per_second', 0)
+        rate = f"{record.get('chapters_per_second', 0)} c/s"
         
         config = record.get('config', {})
-        conf_str = f"P:{config.get('proxy_mode')} W:{config.get('workers')}"
+        mode = f"{config.get('proxy_mode')} (W:{config.get('workers')})"
         
-        print(f"{ts:<20} | {target:<20} | {caps:<8} | {dur:<10} | {rate:<10} | {conf_str:<30}")
+        status_icon = "✅" if record.get('status') == 'success' else "❌"
+        
+        print(f"{ts:<19} | {domain:<15} | {caps:<5} | {dur:<6} | {rate:<8} | {mode} {status_icon}")
 
 if __name__ == "__main__":
     benchmarks = load_benchmarks()
     if benchmarks:
-        print_table(benchmarks)
+        print_detailed_table(benchmarks)
+        print_summary(benchmarks)
+    else:
+        sys.exit(1)

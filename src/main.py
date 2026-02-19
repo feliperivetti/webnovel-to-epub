@@ -74,7 +74,6 @@ async def lifespan(app: FastAPI):
     # Run cleanup every hour (3600s)
     scheduler.add_job(cleanup_stale_files, 'interval', seconds=3600)
     scheduler.start()
-    scheduler.start()
     logger.info("🕒 Scheduler started: File cleanup job scheduled (every 1h).")
 
     # Discover and register scrapers

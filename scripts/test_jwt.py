@@ -1,31 +1,37 @@
+import base64
+import json
+
 from jose import jwt, JWTError
+
+
+def _make_none_token(payload: dict) -> str:
+    """Manually craft a JWT with alg='none' (jose blocks this by design)."""
+    header = base64.urlsafe_b64encode(
+        json.dumps({"alg": "none", "typ": "JWT"}).encode()
+    ).rstrip(b"=").decode()
+    body = base64.urlsafe_b64encode(
+        json.dumps(payload).encode()
+    ).rstrip(b"=").decode()
+    return f"{header}.{body}."
+
 
 def test_jwt_error():
     secret = "secret"
-    # Create a token with HS256 (valid)
-    token_hs256 = jwt.encode({"sub": "user"}, secret, algorithm="HS256")
-    
-    # Create a token with NONE (invalid per our config)
-    token_none = jwt.encode({"sub": "user"}, "", algorithm="none") # Note: jose might not let us encode 'none' easily without explicit allow
-    
-    print("Testing HS256 decode with HS256 allowed:")
-    try:
-        jwt.decode(token_hs256, secret, algorithms=["HS256"])
-        print("Success")
-    except Exception as e:
-        print(f"Error: {e}")
 
-    print("\nTesting 'none' alg token with HS256 allowed:")
+    # 1) Valid HS256 token – should decode fine
+    token_hs256 = jwt.encode({"sub": "user"}, secret, algorithm="HS256")
+    decoded = jwt.decode(token_hs256, secret, algorithms=["HS256"])
+    assert decoded["sub"] == "user"
+
+    # 2) Manually crafted alg='none' token – must be rejected
+    token_none = _make_none_token({"sub": "user"})
     try:
-        # We simulate a token with alg='none' coming in
-        # To bypass jose encode protection, we'll manually craft it or just valid RS256 if we had keys
-        # For 'none': header={"alg": "none", "typ": "JWT"}
-        # But jose supports 'none'.
-        # Let's try to decode token_none expecting HS256
         jwt.decode(token_none, secret, algorithms=["HS256"])
-        print("Success")
-    except JWTError as e:
-        print(f"Caught expected error: {e}")
+        assert False, "Should have raised JWTError for alg='none'"
+    except JWTError:
+        pass  # Expected
+
 
 if __name__ == "__main__":
     test_jwt_error()
+    print("All JWT tests passed!")

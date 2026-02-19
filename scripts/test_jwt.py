@@ -1,11 +1,11 @@
 import base64
 import json
 
-from jose import jwt, JWTError
+import jwt  # PyJWT
 
 
 def _make_none_token(payload: dict) -> str:
-    """Manually craft a JWT with alg='none' (jose blocks this by design)."""
+    """Manually craft a JWT with alg='none' (PyJWT blocks this by design)."""
     header = base64.urlsafe_b64encode(
         json.dumps({"alg": "none", "typ": "JWT"}).encode()
     ).rstrip(b"=").decode()
@@ -27,8 +27,8 @@ def test_jwt_error():
     token_none = _make_none_token({"sub": "user"})
     try:
         jwt.decode(token_none, secret, algorithms=["HS256"])
-        assert False, "Should have raised JWTError for alg='none'"
-    except JWTError:
+        assert False, "Should have raised InvalidTokenError for alg='none'"
+    except jwt.InvalidTokenError:
         pass  # Expected
 
 

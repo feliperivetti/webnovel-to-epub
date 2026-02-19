@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from jose import jwt, JWTError
+import jwt  # PyJWT
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from src.routes import book_routes, search_routes
@@ -51,15 +51,6 @@ async def verify_internal_token(
     token = credentials.credentials
     
     try:
-        # DEBUG LOGGING (Temporary)
-        try:
-            unverified_header = jwt.get_unverified_header(token)
-            logger.info(f"🔍 Inspecting Token Header: {unverified_header}")
-            logger.info(f"🔑 API_JWT_SECRET configured check: {bool(settings.API_JWT_SECRET)}")
-        except Exception:
-            pass
-            
-        # Use settings.API_JWT_SECRET instead of global variable
         payload = jwt.decode(token, settings.API_JWT_SECRET, algorithms=[ALGORITHM])
         
         # Validate action (optional - for extra security)
@@ -69,7 +60,7 @@ async def verify_internal_token(
         logger.info(f"✅ Authenticated request from user {payload.get('sub')} (tier: {payload.get('tier')})")
         return payload
         
-    except JWTError as e:
+    except jwt.InvalidTokenError as e:
         logger.error(f"❌ JWT validation failed: {e}")
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
     

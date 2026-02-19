@@ -17,14 +17,13 @@ from src.config import get_settings
 from src.services.registry import ScraperRegistry
 from src.services.cleanup_service import cleanup_stale_files
 
-# --- LOAD SETTINGS ---
 
 # --- LOAD SETTINGS ---
 settings = get_settings()
 
 # --- JWT CONFIGURATION ---
-# --- JWT CONFIGURATION ---
 ALGORITHM = "HS256"
+
 # Set auto_error=False to allow us to handle missing tokens manually in verify_internal_token
 security = HTTPBearer(auto_error=False)
 
@@ -52,6 +51,14 @@ async def verify_internal_token(
     token = credentials.credentials
     
     try:
+        # DEBUG LOGGING (Temporary)
+        try:
+            unverified_header = jwt.get_unverified_header(token)
+            logger.info(f"🔍 Inspecting Token Header: {unverified_header}")
+            logger.info(f"🔑 API_JWT_SECRET configured check: {bool(settings.API_JWT_SECRET)}")
+        except Exception:
+            pass
+            
         # Use settings.API_JWT_SECRET instead of global variable
         payload = jwt.decode(token, settings.API_JWT_SECRET, algorithms=[ALGORITHM])
         

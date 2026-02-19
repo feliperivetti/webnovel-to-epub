@@ -23,7 +23,8 @@ def load_benchmarks():
     return data
 
 def print_summary(data):
-    if not data: return
+    if not data:
+        return
     
     total_runs = len(data)
     successes = [r for r in data if r.get('status') == 'success']

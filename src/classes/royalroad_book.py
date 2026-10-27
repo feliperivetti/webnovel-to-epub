@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from .base_book import BaseScraper
 from src.utils.logger import logger
 from src.schemas.novel_schema import BookMetadata, ChapterContent
-from src.utils.exceptions import ScraperParsingException
+from src.utils.exceptions import AntiBotChallengeException, ScraperParsingException
 
 class MyRoyalRoadBook(BaseScraper):
     def __init__(self, *args, **kwargs) -> None:
@@ -24,13 +24,23 @@ class MyRoyalRoadBook(BaseScraper):
             'chap_content': ('div', {'class': 'chapter-inner chapter-content'})
         }
 
+    def _get_soup(self, url: str) -> BeautifulSoup:
+        response = self._session.get(url, timeout=self.settings.DEFAULT_TIMEOUT)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        if soup.select_one('script#anubis_challenge, script#anubis-main'):
+            raise AntiBotChallengeException(
+                "RoyalRoad returned an Anubis JavaScript proof-of-work challenge, "
+                "not the requested content. Waiting in requests/cloudscraper does "
+                "not execute JavaScript. Test with debug_scraper --browser msedge --headed."
+            )
+        return soup
+
     def get_book_metadata(self) -> BookMetadata:
         """Extracts basic book information using the shared session."""
         
         try:
-            response = self._session.get(self._main_url, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = self._get_soup(self._main_url)
 
             header = soup.find(*self._selectors['meta_header'])
             if not header:
@@ -68,9 +78,7 @@ class MyRoyalRoadBook(BaseScraper):
         
         """Retrieves real chapter links and validates the requested range."""
         
-        response = self._session.get(self._main_url, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = self._get_soup(self._main_url)
         
         # Get all rows from the chapters table
         all_rows = soup.find_all(*self._selectors['chap_table_rows'])
@@ -100,9 +108,7 @@ class MyRoyalRoadBook(BaseScraper):
     def get_chapter_content(self, url: str) -> ChapterContent:
         """Scrapes the title and body text of a specific chapter."""
         # Note: Detailed download logs are handled by the BaseBook executor
-        response = self._session.get(url, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = self._get_soup(url)
 
         chapter_title_tag = soup.find(*self._selectors['chap_title_tag'])
         content_div = soup.find(*self._selectors['chap_content'])
@@ -122,4 +128,3 @@ class MyRoyalRoadBook(BaseScraper):
             title=title,
             content=content_str
         )
-    

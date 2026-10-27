@@ -4,7 +4,7 @@ from src.classes.pandanovel_book import MyPandaNovelBook
 from src.services.registry import ScraperRegistry
 from src.utils.logger import logger
 
-@ScraperRegistry.register("pandanovel.co", "novelfire.net")
+@ScraperRegistry.register("pandanovel.co", "novelfire.net", "novelphoenix.com")
 class PandaNovelService(BaseService):
     """
     Service responsible for interacting with PandaNovel.
@@ -80,4 +80,3 @@ class PandaNovelService(BaseService):
         """
         logger.info(f"[{self.service_name}] Creating MyPandaNovelBook instance for: {url}")
         return MyPandaNovelBook(url, qty, start)
-    

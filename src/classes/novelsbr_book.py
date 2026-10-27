@@ -11,13 +11,14 @@ class MyNovelsBrBook(BaseScraper):
         
         # SELECTORS (Restored/Inferred)
         self._selectors = {
-            'meta_header': 'div.book-header',
-            'meta_title': 'h1.book-title',
-            'meta_info': 'div.book-info',
-            'meta_description': 'div.book-description',
+            'meta_header': 'div#hero-novel',
+            'meta_title': 'h1.mb-0',
+            'meta_info': 'div.col-md-6.text-center',
+            'meta_description': '#hero-novel .col-md-6.text-center > p',
             'meta_chapter_list_all': 'div#volumes',
-            
-            'chap_content': 'div.chapter-content'
+
+            'chap_title': 'h2.chapter-title',
+            'chap_content': 'div.chapter-content',
         }
 
     def get_book_metadata(self) -> BookMetadata:
@@ -145,8 +146,8 @@ class MyNovelsBrBook(BaseScraper):
             response.encoding = 'utf-8'
             soup = BeautifulSoup(response.text, 'lxml')
 
-            # 1. Select the title (often h1 or h2 with chapter-title class)
-            chapter_title = soup.select_one('h1.mb-0, h2.chapter-title, .chapter-title')
+            # 1. Select the chapter heading, separate from the page/book heading.
+            chapter_title = soup.select_one(self._selectors['chap_title'])
             
             # 2. Select the main container
             container = soup.select_one(self._selectors.get('chap_content', 'div.chapter-content'))

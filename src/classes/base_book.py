@@ -4,13 +4,14 @@ import cloudscraper
 import requests
 import concurrent.futures
 from abc import ABC, abstractmethod
+from bs4 import BeautifulSoup
 
 from src.utils.constants import EPUB_STRINGS
 from src.utils.logger import logger
 from src.config import get_settings
 from src.schemas.novel_schema import Novel, Chapter, BookMetadata, ChapterContent
 from src.services.metrics_service import benchmark_scraper
-from src.utils.exceptions import NovelNotFoundException, ChapterLimitException
+from src.utils.exceptions import AllChaptersFailedException, NovelNotFoundException, ChapterLimitException
 # Removed multiple statements on one line in later chunk if needed, but here we fix imports.
 
 class BaseScraper(ABC):
@@ -66,7 +67,7 @@ class BaseScraper(ABC):
         for i in range(max_retries):
             try:
                 data = self.get_chapter_content(url)
-                if not data or not data.content:
+                if not data or not BeautifulSoup(data.content, 'html.parser').get_text(strip=True):
                     raise ValueError("Main content is empty or not found.")
                 return data
             except requests.exceptions.HTTPError as e:
@@ -188,6 +189,7 @@ class BaseScraper(ABC):
         chapters_data_results = [None] * total_to_download
         
         completed_count = 0
+        successful_count = 0
         # Calculate checkpoints for logging (every 10%)
         checkpoints = {max(1, int(total_to_download * (i / 10))) for i in range(1, 11)}
 
@@ -202,10 +204,12 @@ class BaseScraper(ABC):
                 try:
                     result = future.result()
                     chapters_data_results[index] = result
+                    successful_count += 1
                 except Exception as e:
-                    logger.error(f"[{self.class_name}] Error on chapter {index+1}: {e}")
+                    chapter_number = self._start_chapter + index
+                    logger.error(f"[{self.class_name}] Error on chapter {chapter_number} ({chapter_urls[index]}): {e}")
                     chapters_data_results[index] = ChapterContent(
-                        title=f'Error Chapter {index+1}', 
+                        title=f'Error Chapter {chapter_number}',
                         content=EPUB_STRINGS["error_content"]
                     )
                 
@@ -222,6 +226,16 @@ class BaseScraper(ABC):
                 if completed_count in checkpoints or completed_count == total_to_download:
                     percentage = (completed_count / total_to_download) * 100
                     logger.info(f"[{self.class_name}] Progress: {percentage:.0f}% ({completed_count}/{total_to_download})")
+
+        if total_to_download and successful_count == 0:
+            raise AllChaptersFailedException(
+                f"All {total_to_download} selected chapters failed to download. No EPUB was generated."
+            )
+        if successful_count < total_to_download:
+            logger.warning(
+                f"[{self.class_name}] Partial download: {successful_count}/{total_to_download} chapters; "
+                "failed chapters remain as warning pages."
+            )
 
         # 4. Assemble Chapter Objects
         for i, data in enumerate(chapters_data_results):

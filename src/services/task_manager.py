@@ -39,7 +39,7 @@ class TaskManager:
         # Not locking here for performance as dict assignment is atomic-ish in CPython, 
         # but in async context with multiple workers specific locking might be needed. 
         # For this MVP, avoiding lock spam on every 1% increment.
-        if task_id in cls._tasks:
+        if task_id in cls._tasks and cls._tasks[task_id]["status"] not in ("completed", "failed"):
             cls._tasks[task_id]["progress"] = progress
             cls._tasks[task_id]["status"] = "processing"
 

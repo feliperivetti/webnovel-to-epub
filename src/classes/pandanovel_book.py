@@ -1,10 +1,13 @@
 from bs4 import BeautifulSoup
+from urllib.parse import urlsplit
 from src.classes.base_book import BaseScraper
 from src.utils.logger import logger
 from src.schemas.novel_schema import BookMetadata, ChapterContent
 from src.utils.exceptions import ScraperParsingException, NovelNotFoundException
 
 class MyPandaNovelBook(BaseScraper):
+    CHAPTER_BASE_URL = "https://novelphoenix.com/novel"
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         
@@ -63,7 +66,7 @@ class MyPandaNovelBook(BaseScraper):
 
     def get_chapters_link(self) -> list:
         """Generates chapter URLs and logs the range."""
-        slug = self._main_url.split('/')[-1]
+        slug = urlsplit(self._main_url).path.rstrip('/').rsplit('/', 1)[-1]
         
         if self._start_chapter < 1:
             logger.error(f"[{self.class_name}] Invalid start chapter: {self._start_chapter}")
@@ -80,8 +83,9 @@ class MyPandaNovelBook(BaseScraper):
         chapter_urls = []
         for i in range(qty):
             current_chapter_num = i + self._start_chapter
-            # Panda/Novelfire specific URL pattern
-            url = f'https://novelfire.noveljk.org/book/{slug}/chapter-{current_chapter_num}'
+            # Chapters migrated to Novel Phoenix; the optional noti parameter
+            # only enables a browser welcome modal and is not needed for content.
+            url = f'{self.CHAPTER_BASE_URL}/{slug}/chapter-{current_chapter_num}'
             chapter_urls.append(url)
             
         return chapter_urls

@@ -1,7 +1,18 @@
 import pytest
+from pathlib import Path
 from src.classes.royalroad_book import MyRoyalRoadBook
+from src.utils.exceptions import AntiBotChallengeException
 
 class TestRoyalRoadScraper:
+
+    @pytest.mark.parametrize("method", ["get_book_metadata", "get_chapters_link", "get_chapter_content"])
+    def test_anubis_is_not_reported_as_layout_or_chapter_range_error(self, mock_cloudscraper, method):
+        _, response = mock_cloudscraper
+        response.text = (Path(__file__).parent / "fixtures" / "royalroad_anubis.html").read_text()
+        book = MyRoyalRoadBook("https://www.royalroad.com/fiction/123/test", 1, 1)
+        args = ("https://www.royalroad.com/fiction/chapter/1",) if method == "get_chapter_content" else ()
+        with pytest.raises(AntiBotChallengeException, match="JavaScript proof-of-work"):
+            getattr(book, method)(*args)
     
     def test_get_book_metadata(self, mock_cloudscraper, royalroad_toc_html):
         """

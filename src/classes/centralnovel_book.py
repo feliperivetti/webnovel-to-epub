@@ -1,5 +1,6 @@
 import re
 import time
+from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
 from .base_book import BaseScraper
 from src.utils.logger import logger
@@ -15,6 +16,7 @@ class MyCentralNovelBook(BaseScraper):
             'meta_header': 'div.bigcontent',
             'meta_title': 'h1.entry-title',
             'meta_info': 'div.info-content',
+            'meta_author': 'a[href*="/writer/"]',
             'meta_description': 'div.entry-content',
             'meta_chapter_list_all': 'div.eplister',
             
@@ -36,8 +38,16 @@ class MyCentralNovelBook(BaseScraper):
                 raise ScraperParsingException("Could not find the book header. Check the URL.")
                 
             info_content = header.select_one(self._selectors['meta_info'])
-            author_spans = info_content.find_all('span') if info_content else []
-            author_text = author_spans[2].get_text(strip=True) if len(author_spans) > 2 else "Unknown Author"
+            author_link = info_content.select_one(self._selectors['meta_author']) if info_content else None
+            author_text = author_link.get_text(' ', strip=True) if author_link else "Unknown Author"
+            if not author_link and info_content:
+                # If the name has no link, identify its label instead of relying on span order.
+                for field in info_content.find_all('span'):
+                    label = field.find(['b', 'strong'])
+                    if label and re.fullmatch(r'autor\s*:', label.get_text(' ', strip=True), re.IGNORECASE):
+                        author_text = re.sub(r'^autor\s*:\s*', '', field.get_text(' ', strip=True),
+                                             count=1, flags=re.IGNORECASE).strip() or "Unknown Author"
+                        break
 
             description_div = soup.select_one(self._selectors['meta_description'])
             # Convert description to string immediately
@@ -68,7 +78,16 @@ class MyCentralNovelBook(BaseScraper):
         soup = BeautifulSoup(response.text, 'html.parser')
 
         all_eplisters = soup.select(self._selectors['meta_chapter_list_all'])
-        total_available = sum(len(block.find_all('a')) for block in all_eplisters)
+        # Reading links belong directly to a chapter row; PDF controls are nested.
+        # Also reject direct PDF links if the site's markup changes.
+        chapter_links = [
+            link
+            for block in all_eplisters
+            for link in block.select('li > a[href]')
+            if 'dlpdf' not in link.get('class', [])
+            and not urlsplit(link['href']).path.rstrip('/').lower().endswith(('/pdf', '.pdf'))
+        ]
+        total_available = len(chapter_links)
 
         if total_available == 0:
             logger.error(f"[{self.class_name}] No chapters found on the page.")
@@ -116,13 +135,6 @@ class MyCentralNovelBook(BaseScraper):
                 # Create a minimal empty structure to return as string
                 content_div = soup.new_tag("div")
 
-        # Cleanup specific to Central Novel (removal of AI notices)
-        if content_div:
-            first_p = content_div.find('p')
-            if first_p and "Inteligência Artificial" in first_p.get_text():
-                first_p.decompose()
-                logger.debug(f"[{self.class_name}] Removed AI disclaimer from {url}")
-
         title = chapter_title.get_text(strip=True) if chapter_title else "Untitled"
         
         # Convert to string now
@@ -132,4 +144,3 @@ class MyCentralNovelBook(BaseScraper):
             title=title,
             content=content_str
         )
-    

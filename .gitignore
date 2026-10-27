@@ -15,6 +15,7 @@ logs/*
 
 # --- Generated Files (Scraper Outputs) ---
 *.epub
+diagnostics/
 *.jpg
 *.jpeg
 *.png

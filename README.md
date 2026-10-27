@@ -38,6 +38,9 @@ Antes de executar o projeto, certifique-se de ter:
 
 ## 🏗️ Uso
 
+Para testar os métodos atuais pelo terminal, inspecionar respostas HTTP e
+diagnosticar capítulos vazios, consulte o [guia de diagnóstico dos scrapers](docs/scraper-debugging.md).
+
 1. **Configure as URLs**:
    Atualize o arquivo de configuração com as URLs das webnovels que deseja converter. Consulte a documentação para o formato correto.
 

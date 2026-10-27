@@ -1,0 +1,80 @@
+{
+  "pandanovel_toc": {
+    "requested_url": "https://novelphoenix.com/novel/shadow-slave",
+    "final_url": "https://novelphoenix.com/novel/shadow-slave",
+    "captured_at": "2026-10-27T21:20:12.092662+00:00",
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "bytes": 75008,
+    "sha256": "d54a40b9994697a394ee42bb2835305e47c2fdba6b956fdb016b44bc65b83f9b",
+    "title": "Shadow Slave - Novel Phoenix",
+    "fixture_sha256": "75a7278d9fc3f006a71287193ba8cb10d18beab501a041c8766420d428d72ddc",
+    "fixture_bytes": 3771,
+    "selection": "Novel header and synopsis; original attributes, image, author and statistics retained."
+  },
+  "pandanovel_chap": {
+    "requested_url": "https://novelphoenix.com/novel/shadow-slave/chapter-1",
+    "final_url": "https://novelphoenix.com/novel/shadow-slave/chapter-1",
+    "captured_at": "2026-10-27T21:20:12.458187+00:00",
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "bytes": 83703,
+    "sha256": "8bcaa5fb937a0beb954e3706a0d4f6e3caf27efd1aabae1179326c8549f1d0d8",
+    "title": "Shadow Slave - Chapter 1 - 1: Nightmare Begins - Novel Phoenix",
+    "fixture_sha256": "2a7a83d19cb10b2122bc7e637d679ffc08c7eebde8ff350d287cad1635032b6f",
+    "fixture_bytes": 886,
+    "selection": "Original chapter title and first three story paragraphs; remaining paragraphs omitted."
+  },
+  "centralnovel_toc": {
+    "requested_url": "https://centralnovel.com/series/shadow-slave-20260913/",
+    "final_url": "https://centralnovel.com/series/shadow-slave-20260913/",
+    "captured_at": "2026-10-27T21:20:14.380564+00:00",
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "bytes": 2465651,
+    "sha256": "a3aeebe5de7eaba540b309f8a0e31a08efc18243446b95bdb67a677a171e431a",
+    "title": "Shadow Slave | Central Novel",
+    "fixture_sha256": "efcf145a0d218798fa1aa0e8f5ccbaf8c77524c0a2ca173f9969157e377c4481",
+    "fixture_bytes": 9352,
+    "selection": "Novel metadata/synopsis and original rows for chapters 3, 2, 1 (site order), including their PDF links."
+  },
+  "centralnovel_chap": {
+    "requested_url": "https://centralnovel.com/shadow-slave-capitulo-1/",
+    "final_url": "https://centralnovel.com/shadow-slave-capitulo-1/",
+    "captured_at": "2026-10-27T21:20:14.521149+00:00",
+    "status": 200,
+    "content_type": "text/html; charset=UTF-8",
+    "bytes": 137888,
+    "sha256": "bdd5f8efdacff3654ab67df4d884a9278734882b8b9d4673bad067eb12bd60f4",
+    "title": "Shadow Slave – Capítulo  1 | Central Novel",
+    "fixture_sha256": "adb1dcdf4c25e80945b07c29ba486af64d794f4ecccb4342159309e588ef6901",
+    "fixture_bytes": 1509,
+    "selection": "Original chapter title, actual translation notice and first three story paragraphs."
+  },
+  "novelsbr_toc": {
+    "requested_url": "https://novels-br.com/novels/escravo-das-sombras",
+    "final_url": "https://novels-br.com/novels/escravo-das-sombras",
+    "captured_at": "2026-10-27T21:20:15.364431+00:00",
+    "status": 200,
+    "content_type": "text/html;charset=UTF-8",
+    "bytes": 1751637,
+    "sha256": "6fa53613c48169fb92b53488446ca5e356931d01ae7d9bfa3db042e016d01812",
+    "title": "Escravo das Sombras - Novels BR",
+    "fixture_sha256": "59351588b96a1af1e20e6ac01a4a203de85ace43d03ba1efc46fa76dab71201a",
+    "fixture_bytes": 4728,
+    "selection": "Original hero with metadata/synopsis and first three chapter rows, preserving accordion hierarchy."
+  },
+  "novelsbr_chap": {
+    "requested_url": "https://novels-br.com/novels/escravo-das-sombras/volume-unico-capitulo-1--o-pesadelo-comeca",
+    "final_url": "https://novels-br.com/novels/escravo-das-sombras/volume-unico-capitulo-1--o-pesadelo-comeca",
+    "captured_at": "2026-10-27T21:20:15.573336+00:00",
+    "status": 200,
+    "content_type": "text/html;charset=UTF-8",
+    "bytes": 40356,
+    "sha256": "4c93b9bc735c1b86dc42ec831e28889084fa7e6979ab85eea061c135d96ea948",
+    "title": "Capítulo 1 - Escravo das Sombras",
+    "fixture_sha256": "9f0c77df9b617449c4b2c6693404b85a7c75c86506e23fff826cfcc62716ea9e",
+    "fixture_bytes": 1525,
+    "selection": "Both actual title elements, hidden attribution/link and first three story paragraphs."
+  }
+}

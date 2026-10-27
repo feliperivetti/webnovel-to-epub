@@ -1,0 +1,44 @@
+{
+  "panda": {
+    "book_title": "Shadow Slave",
+    "author": "Guiltythree",
+    "description_contains": ["Growing up in poverty, Sunny never expected anything good from life."],
+    "chapter_count": 1,
+    "has_cover": true,
+    "chapters": [
+      {
+        "title": "Chapter 1 - 1: Nightmare Begins",
+        "required_text": ["A frail-looking young man with pale skin and dark circles under his eyes"],
+        "forbidden_text": []
+      }
+    ]
+  },
+  "centralnovel": {
+    "book_title": "Shadow Slave",
+    "author": "Guiltythree",
+    "description_contains": ["Crescendo na pobreza, Sunny nunca esperou nada de bom da vida."],
+    "chapter_count": 1,
+    "has_cover": true,
+    "chapters": [
+      {
+        "title": "O Pesadelo Começa",
+        "required_text": ["Um jovem de aparência frágil, com pele pálida e olheiras escuras sob os olhos"],
+        "forbidden_text": []
+      }
+    ]
+  },
+  "novelsbr": {
+    "book_title": "Escravo das Sombras",
+    "author": "Guiltythree",
+    "description_contains": ["Crescendo na pobreza, Sunny nunca esperou nada de bom da vida."],
+    "chapter_count": 1,
+    "has_cover": true,
+    "chapters": [
+      {
+        "title": "Capítulo 1: O Pesadelo Começa",
+        "required_text": ["Afinal, sua vida estava chegando ao fim."],
+        "forbidden_text": []
+      }
+    ]
+  }
+}

@@ -1,87 +1,50 @@
+"""API -> real scraper -> EPUB -> SSE -> download, with only external HTTP simulated."""
+
+import json
+from pathlib import Path
+
 import pytest
-from httpx import AsyncClient, ASGITransport
-from src.main import app, verify_internal_token
-from unittest.mock import MagicMock
-import nest_asyncio
 
-nest_asyncio.apply()
+from src.services.task_manager import TaskManager
+from src.tests.epub_checks import assert_expected_epub, inspect_epub, load_expected
+from src.tests.offline_flow import CASES, COVER_BYTES, offline_client, terminal_event
 
-# Override auth for testing
-app.dependency_overrides[verify_internal_token] = lambda: {"sub": "test", "action": "generate-epub"}
 
-@pytest.fixture
-def mock_scrapers(mocker):
-    # Mock Registry to return a mock class
-    mock_service_cls = MagicMock()
-    mock_scraper = MagicMock()
-    
-    # Mock scrape_novel to be compatible with threadpool
-    # It just needs to return a dummy novel data
-    from src.schemas.novel_schema import Novel, BookMetadata, Chapter
-    mock_novel = Novel(
-        metadata=BookMetadata(book_title="Async Test", book_author="Me", book_description="Desc"),
-        chapters=[Chapter(index=1, title="Ch1", content="Text")]
-    )
-    mock_scraper.scrape_novel.return_value = mock_novel
-    
-    mock_service_cls.return_value.get_book_instance.return_value = mock_scraper
-    mocker.patch("src.services.registry.ScraperRegistry.get_service", return_value=mock_service_cls)
-    return mock_scraper
+@pytest.fixture(scope="module", params=CASES, ids=CASES)
+def offline_epub(request, tmp_path_factory):
+    source = request.param
+    output_dir = tmp_path_factory.mktemp(f"offline-{source}")
+    with offline_client(source, output_dir) as (client, scenario):
+        started = client.post("/books/generate", params={"url": scenario.novel_url, "qty": 1, "start": 1})
+        assert started.status_code == 202, started.text
+        task_id = started.json()["task_id"]
+        task = TaskManager.get_task(task_id)
+        assert task and task["status"] == "completed", task
+        server_file = Path(task["file_path"])
+        assert server_file.is_file()
 
-@pytest.mark.asyncio
-async def test_full_sse_flow(mock_scrapers, mocker):
-    """
-    Integration test for the async task flow:
-    1. POST /generate -> get task_id
-    2. GET /events/{task_id} -> stream updates
-    3. GET /download/{task_id} -> download file
-    """
-    
-    # 1. Start Task
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.post("/books/generate", params={
-            "url": "https://royalroad.com/fiction/123",
-            "qty": 1, 
-            "start": 1
-        })
-    
-    assert response.status_code == 202
-    data = response.json()
-    task_id = data["task_id"]
-    assert "task_id" in data
-    
-    # 2. Consume SSE Events
-    # We need to wait a bit for background task to finish or we manually trigger it?
-    # Since we use FastAPI TestClient/AsyncClient, background tasks run in the event loop.
-    # We poll the SSE endpoint.
-    
-    events = []
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        async with ac.stream("GET", f"/books/events/{task_id}") as response:
-             async for line in response.aiter_lines():
-                 if line.startswith("data:"):
-                     import json
-                     payload = json.loads(line[6:])
-                     events.append(payload)
-                     if payload.get("status") in ["completed", "failed"]:
-                         break
-    
-    # Verify we got events
-    assert len(events) > 0
-    final_event = events[-1]
-    
-    error_msg = final_event.get("error", "Unknown error")
-    assert final_event["status"] == "completed", f"Task Failed: {error_msg}"
-    assert "download_url" in final_event
-    
-    # 3. Download
-    download_url = final_event["download_url"]
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        dl_response = await ac.get(download_url)
-        
-    assert dl_response.status_code == 200
-    assert dl_response.headers["content-type"] == "application/epub+zip"
-    
-    # Cleanup mocked file if real one created? 
-    # TaskManager uses tempfile, logic should handle it.
+        event = terminal_event(client, started.json()["status_url"])
+        assert event["status"] == "completed" and event["progress"] == 100
+        download = client.get(event["download_url"])
+        assert download.status_code == 200
+        assert download.headers["content-type"] == "application/epub+zip"
+        assert "attachment" in download.headers["content-disposition"]
+        assert TaskManager.get_task(task_id) is None
+        assert not server_file.exists()
+        assert set(scenario.seen) == scenario.response_urls, "Some fixture responses were never requested"
+        epub_path = output_dir / "download.epub"
+        epub_path.write_bytes(download.content)
+        actual = inspect_epub(epub_path, COVER_BYTES)
+        assert actual["chapter_count"] == 1  # The request explicitly asks for one chapter.
+        (output_dir / "actual.json").write_text(json.dumps(actual, ensure_ascii=False, indent=2), encoding="utf-8")
+        yield {"source": source, "actual": actual, "epub_path": epub_path}
+
+
+def test_full_sse_flow(offline_epub):
+    """Always runs, even while the manual expected.json values are placeholders."""
+    assert offline_epub["epub_path"].is_file()
+
+
+def test_epub_matches_manual_expectations(offline_epub):
+    expected = load_expected(offline_epub["source"])
+    assert_expected_epub(offline_epub["actual"], expected)

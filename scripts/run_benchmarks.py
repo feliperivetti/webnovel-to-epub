@@ -109,9 +109,7 @@ def run_benchmarks():
     total_elapsed = time.time() - total_start
     print("\n" + "="*80)
     print(f"✅ All benchmarks completed in {total_elapsed/60:.2f} minutes.")
-    print("Run 'python scripts/benchmark_viewer.py' to see analysis.")
-
-    print("\nAll benchmarks completed. Run 'python scripts/benchmark_viewer.py' to see results.")
+    print("Run 'python -m scripts.benchmark_viewer' to see results.")
 
 if __name__ == "__main__":
     run_benchmarks()

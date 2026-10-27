@@ -3,10 +3,11 @@ import os
 import time
 import functools
 from datetime import datetime
-from src.config import get_settings
+from pathlib import Path
+from src.config import BENCHMARKS_FILE, get_settings
 
 class MetricsService:
-    FILE_PATH = "benchmarks.jsonl"
+    FILE_PATH = BENCHMARKS_FILE
 
     @classmethod
     def record_scrape_metric(cls, 
@@ -42,6 +43,7 @@ class MetricsService:
         }
         
         try:
+            Path(cls.FILE_PATH).parent.mkdir(parents=True, exist_ok=True)
             with open(cls.FILE_PATH, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record) + "\n")
         except Exception as e:

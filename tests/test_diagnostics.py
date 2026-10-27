@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 import requests
 
-from src.diagnostics import ScraperDiagnostics, create_scraper, main
+from scripts._diagnostics import ScraperDiagnostics, create_scraper, main
 
 
 FIXTURES = Path(__file__).parent / "fixtures"

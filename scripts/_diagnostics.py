@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from src.config import get_settings
+from src.config import DIAGNOSTICS_DIR, get_settings
 from src.services.registry import ScraperRegistry
 from src.utils.logger import logger
 
@@ -229,7 +229,7 @@ def main(argv=None):
     parser.add_argument("--timeout", type=positive_int, default=15, help="HTTP timeout in seconds (default: 15)")
     parser.add_argument("--html", type=Path, help="Parse saved UTF-8 HTML offline; use with an individual stage")
     parser.add_argument("--selector", action="append", default=[], help="Also count matches for this CSS selector")
-    parser.add_argument("--output-dir", type=Path, help="Default: diagnostics/<timestamp>")
+    parser.add_argument("--output-dir", type=Path, help="Default: outputs/diagnostics/<timestamp>")
     parser.add_argument("--traceback", action="store_true", help="Print full tracebacks")
     parser.add_argument("--browser", choices=("chromium", "chrome", "msedge"),
                         help="RoyalRoad diagnostic: load pages with JavaScript in an isolated browser")
@@ -257,7 +257,7 @@ def main(argv=None):
     if args.chapter_url and urlparse(args.chapter_url).scheme not in ("http", "https"):
         parser.error("--chapter-url must be an absolute HTTP(S) URL")
 
-    output_dir = args.output_dir or Path("diagnostics") / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    output_dir = args.output_dir or DIAGNOSTICS_DIR / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     try:
         scraper = create_scraper(args.url, args.qty, args.start, args.direct or bool(args.html))
     except ValueError as exc:
@@ -267,7 +267,7 @@ def main(argv=None):
     browser = None
     if args.browser:
         try:
-            from src.browser_transport import BrowserTransport
+            from scripts.browser_transport import BrowserTransport
             browser = BrowserTransport(
                 output_dir, args.browser, args.headed, args.wait_seconds,
                 args.pause, None if args.direct else scraper.settings.PROXY_URL,

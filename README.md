@@ -1,77 +1,118 @@
-# 📚 Projeto de Webscraping para Criação de EPUB
+# WebNovel to EPUB
 
-Bem-vindo ao projeto autoral de **webscraping** para webnovels! Este projeto foi desenvolvido para extrair conteúdo de páginas web de webnovels e criar arquivos EPUB a partir dessas páginas. Atualmente, o projeto suporta os seguintes sites:
+API em Python/FastAPI para buscar webnovels, baixar capítulos e montar arquivos
+EPUB. A geração acontece em segundo plano, com acompanhamento por Server-Sent
+Events (SSE) e download separado do arquivo final.
 
-- **[RoyalRoad](https://www.royalroad.com/home)**
-- **[PandaNovel](https://pandanovel.co)**
+## Começar a desenvolver
 
-## 🌟 Descrição
+Use **Python 3.11** como referência, a mesma versão do CI e da imagem Docker.
+Execute os comandos na raiz do repositório.
 
-O objetivo deste projeto é simplificar a coleta e formatação de texto de webnovels, transformando o conteúdo extraído em arquivos EPUB, que são compatíveis com diversos leitores de e-books.
+No PowerShell:
 
-## 🚀 Funcionalidades
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+python -m uvicorn src.main:app --reload
+```
 
-- **Webscraping**: Extração de texto e informações de webnovels.
-- **Criação de EPUB**: Conversão do conteúdo extraído em arquivos EPUB prontos para leitura.
+No Linux/macOS, ative o ambiente com `source venv/bin/activate` e copie a
+configuração com `cp .env.example .env`. Os demais comandos são os mesmos.
+Se o PowerShell impedir a ativação, use `.\venv\Scripts\python.exe` no lugar
+de `python`, sem mudar a política de execução.
 
-## 🛠️ Requisitos
+A API fica em `http://127.0.0.1:8000`; abra `/docs` para explorar os endpoints
+e `/` para verificar o estado do serviço. Sem `API_JWT_SECRET`, a autenticação
+é dispensada no desenvolvimento local. Configure esse segredo no ambiente de
+publicação antes de expor as rotas de geração.
 
-Antes de executar o projeto, certifique-se de ter:
+## Fontes implementadas
 
-- **Python 3.x**: A linguagem usada para o desenvolvimento.
-- **Bibliotecas Python**: Dependências necessárias listadas no arquivo `requirements.txt`.
+| Fonte | Identificador da busca | Domínios registrados para geração |
+| --- | --- | --- |
+| RoyalRoad | `royal` | `royalroad.com` |
+| PandaNovel / NovelFire / NovelPhoenix | `panda` | `pandanovel.co`, `novelfire.net`, `novelphoenix.com` |
+| CentralNovel | `central` | `centralnovel.com` |
+| NovelsBr | `novelsbr` | `novels-br.com` |
 
-## 📥 Instalação
+O scraper Panda gera os links de capítulos em `novelphoenix.com`; sua busca
+ainda consulta o endpoint do PandaNovel. As fontes dependem dos layouts e das
+restrições dos sites externos. Ter um parser e testes offline não garante que
+uma consulta online esteja disponível; consulte o guia de diagnóstico quando
+um site mudar ou apresentar uma proteção antibot.
 
-1. **Clone o Repositório**:
-   Obtenha uma cópia local do projeto com:
-   ```bash
-   git clone https://github.com/seu-usuario/nome-do-repositorio.git
-   ```
+## Fluxo da API
 
-2. **Instale as Dependências**:
-   Navegue até o diretório do projeto e instale as bibliotecas necessárias:
-   ```bash
-   cd nome-do-repositorio
-   pip install -r requirements.txt
-   ```
+1. `GET /search/?source=...&query=...` busca novels em uma fonte.
+2. `POST /books/generate?url=...&qty=...&start=...` aceita uma geração e retorna
+   `202`, com `task_id` e `status_url`.
+3. `GET /books/events/{task_id}` transmite status e percentual por SSE.
+4. `GET /books/download/{task_id}` entrega o EPUB pronto e agenda a remoção do
+   arquivo e da tarefa após o envio.
 
-## 🏗️ Uso
+As rotas `/books` usam `Authorization: Bearer <JWT>` quando o segredo está
+configurado. Veja exemplos, autenticação e limites em [API](docs/api.md).
 
-Para testar os métodos atuais pelo terminal, inspecionar respostas HTTP e
-diagnosticar capítulos vazios, consulte o [guia de diagnóstico dos scrapers](docs/scraper-debugging.md).
+## Organização
 
-1. **Configure as URLs**:
-   Atualize o arquivo de configuração com as URLs das webnovels que deseja converter. Consulte a documentação para o formato correto.
+```text
+src/                    Aplicação executada pela API
+  classes/              Scrapers: HTML e download de capítulos
+  routes/               Endpoints de busca, geração, eventos e download
+  schemas/              Modelos de dados e respostas
+  services/             Busca por fonte, registry, tarefas, EPUB e métricas
+  utils/                Logger, exceções e textos/templates compartilhados
+tests/                  Testes automatizados e helpers de teste
+  fixtures/             HTMLs de referência, origem e valores esperados
+scripts/                Diagnóstico e benchmarks executados manualmente
+docs/                   Guias para desenvolvimento e operação
+outputs/                Logs, diagnósticos e métricas locais; fora do Git
+.github/workflows/      Verificações automáticas no GitHub
+.agent/skills/          Instruções auxiliares para assistentes de desenvolvimento
+```
 
-2. **Execute o Script**:
-   Inicie o processo de webscraping e criação do EPUB com:
-   ```bash
-   python script_principal.py
-   ```
+## Comandos frequentes
 
-3. **Localize o Arquivo EPUB**:
-   O arquivo EPUB gerado estará disponível no diretório de saída especificado na configuração.
+Com o ambiente virtual ativo:
 
-## 📖 Exemplos de Uso
+```powershell
+# Verificar o código e executar os testes offline
+python -m ruff check .
+python -X utf8 -m pytest
 
-### RoyalRoad
-Para extrair uma webnovel do RoyalRoad, forneça a URL da webnovel no formato especificado e execute o script.
+# Inspecionar um scraper sem iniciar a API
+python -m scripts.debug_scraper --help
 
-### PandaNovel.co
-Para extrair de PandaNovel.co, forneça a URL apropriada e siga o mesmo processo.
+# Ler métricas já registradas, sem acessar os sites
+python -m scripts.benchmark_viewer
+```
 
-## 🤝 Contribuições
+O GitHub Actions instala `requirements-dev.txt` e executa Ruff e pytest em
+pushes e pull requests para `main`. Playwright é opcional e só é necessário
+para o diagnóstico com navegador, explicado no guia específico.
 
-Sugestões e melhorias são bem-vindas! Se encontrar problemas ou tiver ideias, abra uma *issue* ou envie uma *pull request*.
+## Documentação
 
-## 📜 Licença
+| Guia | Conteúdo |
+| --- | --- |
+| [Desenvolvimento](docs/development.md) | Configuração, dependências, arquitetura, extensão dos scrapers e ferramentas |
+| [API](docs/api.md) | Exemplos HTTP, JWT, progresso, download e limites atuais |
+| [Testes offline](docs/offline-tests.md) | Executar testes, conferir EPUBs e manter fixtures/expectativas |
+| [Diagnóstico dos scrapers](docs/scraper-debugging.md) | Investigar HTTP, seletores, proxies e páginas com JavaScript |
+| [Roadmap](docs/roadmap.md) | Ideias futuras, sem compromisso de implementação |
 
-Este projeto é para fins educacionais e experimentais. Respeite as políticas de uso dos sites de onde os dados são extraídos.
+## Docker
 
-## 📬 Contato
+```powershell
+docker build -t webnovel-to-epub .
+docker run --rm -p 8000:8000 --env-file .env webnovel-to-epub
+```
 
-Para dúvidas ou suporte adicional, entre em contato pelo e-mail: [fporto@sarrat.com.br](fporto@sarrat.com.br)
-
-Obrigado por usar o projeto! Boa leitura! 🚀📚
-
+A imagem instala somente as dependências da aplicação e copia `src/`.
+Testes, ferramentas manuais e credenciais locais não entram na imagem.
+O serviço usa atualmente um único processo e mantém as tarefas na memória;
+reiniciar o container interrompe as gerações em andamento. Os EPUBs ficam no
+diretório temporário do sistema; logs e métricas ficam em `outputs/`.

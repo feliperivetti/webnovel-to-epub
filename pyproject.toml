@@ -1,0 +1,11 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+cache_dir = "outputs/.cache/pytest"
+addopts = "-ra"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+target-version = "py311"
+cache-dir = "outputs/.cache/ruff"
+extend-exclude = ["outputs", ".agent", "tinkering"]

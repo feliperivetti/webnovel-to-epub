@@ -1,5 +1,7 @@
 # Diagnosticar os scrapers pelo terminal
 
+Voltar ao [README](../README.md) ou ao [guia de desenvolvimento](development.md).
+
 Execute os comandos na raiz do projeto, no PowerShell. Não é necessário iniciar
 a API nem configurar JWT. Use o Python do ambiente virtual:
 
@@ -66,7 +68,7 @@ aviso de boas-vindas no navegador; esse aviso não bloqueou a extração de
 
 ## Inspecionar os resultados
 
-Cada execução cria uma pasta em `diagnostics/<data-hora>/`, ignorada pelo Git:
+Cada execução cria uma pasta em `outputs/diagnostics/<data-hora>/`, ignorada pelo Git:
 
 - `report.json`: resultado por etapa, erros, URLs solicitadas/finais,
   redirecionamentos, status HTTP, título da página e quantidade de ocorrências
@@ -74,7 +76,7 @@ Cada execução cria uma pasta em `diagnostics/<data-hora>/`, ignorada pelo Git:
 - `response-01.html`, etc.: corpo original de cada resposta, inclusive HTTP 403/404.
 - `chapter-001.html` e `chapter-001.txt`: conteúdo extraído, quando houver texto.
 
-Escolha uma pasta explícita com `--output-dir diagnostics/meu-teste`. Use uma
+Escolha uma pasta explícita com `--output-dir outputs/diagnostics/meu-teste`. Use uma
 pasta diferente para cada comparação, para não confundir arquivos de execuções anteriores.
 Erros de conexão sem resposta HTTP aparecem no relatório, sem um arquivo HTML.
 O código de saída é `0` se todas as etapas selecionadas passarem, `1` se alguma
@@ -111,7 +113,7 @@ são ocultados nas mensagens. O HTML salvo é o corpo original da resposta.
 ## Repetir o parser sobre HTML salvo, sem rede
 
 ```powershell
-.\venv\Scripts\python.exe -m scripts.debug_scraper $novel --stage chapter --html diagnostics/meu-teste/response-01.html --selector "div#content" --output-dir diagnostics/offline
+.\venv\Scripts\python.exe -m scripts.debug_scraper $novel --stage chapter --html outputs/diagnostics/meu-teste/response-01.html --selector "div#content" --output-dir outputs/diagnostics/offline
 ```
 
 `--html` usa o arquivo UTF-8 como resposta sintética HTTP 200 para testar apenas
@@ -123,7 +125,7 @@ seletor usado pelo scraper. Você pode repetir a opção para comparar seletores
 Teste offline com uma fixture conhecida do projeto:
 
 ```powershell
-.\venv\Scripts\python.exe -m scripts.debug_scraper $novel --stage chapter --html src/tests/fixtures/pandanovel_chap.html
+.\venv\Scripts\python.exe -m scripts.debug_scraper $novel --stage chapter --html tests/fixtures/pandanovel_chap.html
 ```
 
 Se a fixture passa e o HTML real falha, a diferença está entre a resposta atual
@@ -198,7 +200,7 @@ Abra o interpretador na raiz do projeto:
 ```
 
 ```python
-from src.diagnostics import create_scraper
+from scripts._diagnostics import create_scraper
 
 book = create_scraper("https://novelfire.net/book/shadow-slave", qty=1, start=1)
 metadata = book.get_book_metadata()
@@ -220,5 +222,5 @@ tarefa na API não garante que os capítulos foram extraídos.
 Para acompanhar os logs da API em outro terminal:
 
 ```powershell
-Get-Content .\logs\app.log -Tail 80 -Wait
+Get-Content .\outputs\logs\app.log -Tail 80 -Wait
 ```

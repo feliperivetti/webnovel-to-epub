@@ -5,7 +5,7 @@ from copy import deepcopy
 
 import pytest
 
-from src.tests.epub_checks import EXPECTED_PATH, assert_expected_epub, load_expected
+from tests.epub_checks import EXPECTED_PATH, assert_expected_epub, load_expected
 
 
 def example_contract():

@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from src.services.task_manager import TaskManager
-from src.tests.epub_checks import assert_expected_epub, inspect_epub, load_expected
-from src.tests.offline_flow import CASES, COVER_BYTES, offline_client, terminal_event
+from tests.epub_checks import assert_expected_epub, inspect_epub, load_expected
+from tests.offline_flow import CASES, COVER_BYTES, offline_client, terminal_event
 
 
 @pytest.fixture(scope="module", params=CASES, ids=CASES)

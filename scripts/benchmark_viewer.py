@@ -3,10 +3,14 @@ import os
 import sys
 from datetime import datetime
 from collections import defaultdict
+from pathlib import Path
 
-# Fixed path resolution to find benchmarks.jsonl relative to project root
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FILE_PATH = os.path.join(BASE_DIR, "benchmarks.jsonl")
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src.config import BENCHMARKS_FILE  # noqa: E402
+
+FILE_PATH = BENCHMARKS_FILE
 
 def load_benchmarks():
     if not os.path.exists(FILE_PATH):

@@ -5,8 +5,9 @@ em **27/10/2026**, a partir das seis URLs indicadas pelo usuário. Todas
 responderam HTTP 200 com os metadados ou o conteúdo do capítulo esperado.
 Os testes leem os arquivos localmente e não precisam consultar os sites.
 
-Para os três fluxos completos, preencha os placeholders de **`expected.json`**
-manualmente. Consulte o [guia de execução e preenchimento](../../../docs/offline-tests.md).
+Os três fluxos completos usam os valores já preenchidos de **`expected.json`**.
+Confira as expectativas no HTML original ao alterar as fixtures. Consulte o
+[guia de execução e preenchimento](../../docs/offline-tests.md).
 
 | Fonte | Página principal | Capítulo |
 | --- | --- | --- |
@@ -19,7 +20,7 @@ manualmente. Consulte o [guia de execução e preenchimento](../../../docs/offli
 `sources.json` registra a URL solicitada/final, data UTC, status, título, tamanho
 e SHA-256 de cada captura completa, além do SHA-256 e da seleção de conteúdo
 da fixture reduzida. Os HTMLs completos e o manifesto original estão em
-`diagnostics/fixture-captures-20261027/` na cópia local, ignorados pelo Git.
+`outputs/diagnostics/fixture-captures-20261027/` na cópia local, ignorados pelo Git.
 As fixtures reduzidas são versionadas junto com os testes.
 
 A redução preserva elementos, atributos, hierarquia, acentos e trechos reais.

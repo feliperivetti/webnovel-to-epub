@@ -1,3 +1,5 @@
+"""Check PyJWT algorithm validation independently of the API's JWT dependency."""
+
 import base64
 import json
 
@@ -30,8 +32,3 @@ def test_jwt_error():
         assert False, "Should have raised InvalidTokenError for alg='none'"
     except jwt.InvalidTokenError:
         pass  # Expected
-
-
-if __name__ == "__main__":
-    test_jwt_error()
-    print("All JWT tests passed!")

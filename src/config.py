@@ -1,6 +1,15 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from typing import Optional
+from pathlib import Path
+
+
+# Generated files live outside the source tree, independent of the shell's cwd.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+OUTPUT_DIR = PROJECT_ROOT / "outputs"
+LOG_DIR = OUTPUT_DIR / "logs"
+DIAGNOSTICS_DIR = OUTPUT_DIR / "diagnostics"
+BENCHMARKS_FILE = OUTPUT_DIR / "benchmarks.jsonl"
 
 class Settings(BaseSettings):
     # App Config

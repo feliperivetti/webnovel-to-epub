@@ -1,11 +1,40 @@
-# Fluxos completos offline e expectativas manuais
+# Testes offline e expectativas do EPUB
+
+Voltar ao [README](../README.md) ou ao [guia de desenvolvimento](development.md).
+
+## Executar a suíte
+
+Instale `requirements-dev.txt` e execute, a partir da raiz do projeto:
+
+```powershell
+python -m ruff check .
+python -X utf8 -m pytest
+```
+
+No PowerShell, os exemplos abaixo usam o Python do `venv` diretamente, sem
+exigir ativação. Linux/macOS pode usar `venv/bin/python` ou um ambiente ativo.
+`pyproject.toml` limita a coleta a `tests/` e configura o caminho de importação.
+O CI usa os mesmos comandos em Python 3.11.
+
+| Grupo | Arquivos |
+| --- | --- |
+| Extração por fonte e layouts | `test_scraper.py`, `test_scrapers_extended.py` |
+| Rotas e geração completa | `test_routes.py`, `test_sse.py` |
+| Falhas, tentativas e tarefas | `test_chapter_failures.py`, `test_resilience.py`, `test_task_manager.py` |
+| Diagnóstico e verificações de EPUB | `test_diagnostics.py`, `test_epub_checks.py` |
+| Biblioteca JWT | `test_jwt.py`; não valida a dependência de autenticação HTTP |
+
+`conftest.py` fornece as fixtures compartilhadas; `offline_flow.py` simula
+somente o HTTP externo nos fluxos completos; `epub_checks.py` inspeciona os
+EPUBs. A suíte não precisa iniciar Uvicorn nem instalar Playwright.
 
 ## Onde preencher
 
-Edite **`src/tests/fixtures/expected.json`**. Há um bloco independente para
-`panda`, `centralnovel` e `novelsbr`. Todos os valores esperados começam como
-`__PREENCHER__` ou `null`; nenhum foi extraído automaticamente pelo scraper.
-Você pode preencher e validar uma fonte por vez.
+Edite **`tests/fixtures/expected.json`**. Há um bloco independente para
+`panda`, `centralnovel` e `novelsbr`. Os três blocos atuais já estão preenchidos
+com valores de referência. Ao adicionar ou substituir uma fixture, confira os
+valores no HTML original antes de atualizar as expectativas. Não copie a saída
+do scraper automaticamente para transformar uma falha em resultado esperado.
 
 Confira cada valor nos HTMLs `*_toc.html` e `*_chap.html` da mesma pasta, usando
 as URLs e notas de `README.md`/`sources.json` como referência. As fixtures de
@@ -24,7 +53,7 @@ Escolha trechos que estejam realmente nessas amostras.
 | `chapters[].required_text` | Lista com pelo menos um trecho do texto que deve estar presente. Inclua acentos e avisos que deseja preservar. |
 | `chapters[].forbidden_text` | Lista de trechos que não devem aparecer. Use `[]` se não houver restrições adicionais. |
 
-Substitua todos os placeholders do bloco preenchido, inclusive os `null`.
+Se um novo bloco usar placeholders, substitua todos eles, inclusive os `null`.
 Use listas `[]`, não `null`, para campos opcionais de trechos. Os títulos e o
 autor são comparados exatamente; nos trechos de texto e descrição, apenas
 espaços/quebras de linha são normalizados. Maiúsculas, acentos e palavras
@@ -40,17 +69,17 @@ essas escolhas pertencem aos scrapers, e a comparação dos campos é exata.
 No PowerShell, na raiz do projeto:
 
 ```powershell
-.\venv\Scripts\python.exe -X utf8 -m pytest src/tests/test_sse.py -q -rs
+.\venv\Scripts\python.exe -X utf8 -m pytest tests/test_sse.py -q -rs
 ```
 
 Para uma fonte específica:
 
 ```powershell
-.\venv\Scripts\python.exe -X utf8 -m pytest src/tests/test_sse.py -q -rs -k centralnovel
+.\venv\Scripts\python.exe -X utf8 -m pytest tests/test_sse.py -q -rs -k centralnovel
 ```
 
-O antigo cenário de sucesso com scraper simulado foi substituído por três
-fluxos reais parametrizados. Cada fonte tem duas verificações:
+Os três fluxos de geração usam os scrapers reais com HTTP externo simulado.
+Cada fonte tem duas verificações:
 
 1. **`test_full_sse_flow`:** roda sempre. Executa a API, seleção da fonte,
    metadados, links, download de capítulo/capa, construção do EPUB, evento SSE,
@@ -62,8 +91,9 @@ fluxos reais parametrizados. Cada fonte tem duas verificações:
    aparece como **`skipped`**, informando os campos pendentes. Após preencher,
    roda automaticamente e precisa passar nas comparações.
 
-Um `skip` não significa que o conteúdo foi aprovado. Os três fluxos de estrutura
-continuam rodando mesmo quando as três comparações manuais estão pendentes.
+Um `skip` não significa que o conteúdo foi aprovado. Os fluxos de estrutura
+continuam rodando mesmo se as comparações de conteúdo de uma nova fixture
+ainda estiverem pendentes. Os três blocos atuais não têm placeholders.
 
 Somente as respostas HTTP externas são substituídas pelas fixtures e por uma
 pequena imagem sintética. As URLs precisam corresponder ao mapeamento explícito;
@@ -78,8 +108,12 @@ ao fim, sem modificar o `.env` ou o arquivo de benchmarks do projeto.
 Para manter os resultados em uma pasta conhecida dentro do projeto:
 
 ```powershell
-.\venv\Scripts\python.exe -X utf8 -m pytest src/tests/test_sse.py -q -rs --basetemp=diagnostics/offline-review
+New-Item -ItemType Directory -Force outputs/diagnostics | Out-Null
+.\venv\Scripts\python.exe -X utf8 -m pytest tests/test_sse.py -q -rs --basetemp=outputs/diagnostics/offline-review
 ```
+
+O pytest recria a pasta passada em `--basetemp` a cada execução. Use um caminho
+reservado aos testes, sem arquivos manuais que você queira preservar.
 
 Dentro dela, cada subpasta `offline-panda*`, `offline-centralnovel*` e
 `offline-novelsbr*` contém:
@@ -94,7 +128,7 @@ expectativa. Os testes nunca sobrescrevem o `expected.json`.
 
 ## Falha total, parcial e recuperação dos capítulos
 
-O conjunto `src/tests/test_chapter_failures.py` usa os mesmos scrapers e fluxo
+O conjunto `tests/test_chapter_failures.py` usa os mesmos scrapers e fluxo
 de API. Simula apenas as respostas HTTP e elimina as esperas de retentativa
 nos testes, preservando a lógica de tentativas do código de produção.
 
@@ -118,10 +152,10 @@ tarefa já marcada `failed` ou `completed`.
 As páginas dos capítulos 2 e 3 desses cenários são **variações sintéticas** da
 fixture real do capítulo 1, com títulos e marcadores distintos para conferir
 ordem e preservação. Não são capturas reais dos capítulos 2 e 3. Essa simulação
-fica em `src/tests/offline_flow.py`, compartilhada com os testes de sucesso.
+fica em `tests/offline_flow.py`, compartilhada com os testes de sucesso.
 O `expected.json` continua sendo usado somente pelo fluxo de sucesso com a
 fixture real do capítulo 1 e não é alterado por esses cenários.
 
 ```powershell
-.\venv\Scripts\python.exe -X utf8 -m pytest src/tests/test_chapter_failures.py src/tests/test_task_manager.py -q
+.\venv\Scripts\python.exe -X utf8 -m pytest tests/test_chapter_failures.py tests/test_task_manager.py -q
 ```

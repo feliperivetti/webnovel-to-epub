@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from src.services.task_manager import TaskManager
-from src.tests.epub_checks import inspect_epub
-from src.tests.offline_flow import CASES, COVER_BYTES, offline_client, terminal_event
+from tests.epub_checks import inspect_epub
+from tests.offline_flow import CASES, COVER_BYTES, offline_client, terminal_event
 
 
 @pytest.mark.parametrize("source", CASES)

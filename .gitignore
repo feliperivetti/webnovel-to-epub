@@ -1,42 +1,47 @@
-# --- Python & Environment ---
-venv/
-.venv/
-env/
+# Python bytecode and native extensions
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 
-# --- Logs & Runtime ---
-logs/*
-!logs/.gitkeep
+# Local virtual environments
+/venv/
+/.venv/
+/env/
+/ENV/
+
+# Tool caches (current caches live under outputs/)
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Generated files; keep fixtures and documentation assets versionable
+/outputs/
+*.epub
 *.log
 
-# --- Generated Files (Scraper Outputs) ---
-*.epub
-diagnostics/
-*.jpg
-*.jpeg
-*.png
-*.gif
+# Legacy output locations, before the outputs/ reorganization
+/logs/
+/diagnostics/
+/benchmarks.jsonl
 
-# --- Editor & IDE ---
+# Local credentials; the example contains development defaults only
+.env
+.env.*
+!.env.example
+
+# Editor settings
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# --- Experiments & Temporary Folders ---
-examples/
-tinkering/
+# Local experiments
+/examples/
+/tinkering/
 
-# --- Operating System Files ---
+# Operating system metadata
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# --- Environment Variables & Secrets ---
-.env
-.env.local
-.env.*

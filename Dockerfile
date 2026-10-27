@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 # Set environment variables for build
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -35,21 +35,17 @@ WORKDIR /app
 # Copy the virtual environment from the builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Install runtime system dependencies if needed (often none for slim, but verify if any libs are needed at runtime)
-# For webnovel-to-epub, we likely need libxml2 at runtime if lxml links dynamically, 
-# but often the wheels match the manylinux standard. 
-# However, to be safe and minimalistic, we try without first or add only runtime libs.
-# Actually, lxml often needs libxml2 and libxslt shared libraries at runtime.
+# Shared libraries used by the HTML parsers.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2 \
     libxslt1.1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy application code
-COPY . .
+# The API image contains runtime code only.
+COPY src ./src
 
 # Create necessary directories
-RUN mkdir -p logs outputs
+RUN mkdir -p outputs
 
 # Expose port
 EXPOSE 8000

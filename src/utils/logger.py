@@ -1,11 +1,10 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
+from src.config import LOG_DIR
 
 # Create logs directory if it doesn't exist
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 def setup_logger():
     """Configures the global logging system."""
@@ -27,7 +26,7 @@ def setup_logger():
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # 2. File Handler (Saves to logs/app.log)
+    # 2. File Handler (Saves to outputs/logs/app.log)
     # RotatingFileHandler: keeps the file from getting too big (max 5MB, keeps 3 backups)
     file_handler = RotatingFileHandler(
         LOG_DIR / "app.log", 

@@ -10,15 +10,19 @@ __pycache__/
 *$py.class
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
 
 # Logs e Saídas (Você quer que o container crie os dele)
 logs/
 outputs/
+diagnostics/
+benchmarks.jsonl
 *.log
 *.epub
 
 # Configurações locais e segredos
 .env
+.env.*
 .vscode/
 .idea/
 
@@ -27,6 +31,11 @@ outputs/
 .gitignore
 README.md
 docs/
+tests/
+scripts/
+tinkering/
+.agent/
+.github/
 
 # Arquivos de sistema (Lixo do Windows/Mac)
 Thumbs.db

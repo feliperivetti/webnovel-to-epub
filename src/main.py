@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import jwt  # PyJWT
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from src.routes import book_routes, search_routes
+from src.routes import book_routes, dev_routes, search_routes
 from src.utils.logger import logger
 from src.config import get_settings
 from src.services.registry import ScraperRegistry
@@ -162,6 +162,8 @@ app.include_router(
     dependencies=[Depends(verify_internal_token)]  # 🔐 Protected routes
 )
 app.include_router(search_routes.router)  # Search stays public
+if settings.DEBUG:
+    app.include_router(dev_routes.router)
 
 # --- HEALTH CHECK ROUTE ---
 @app.get("/", tags=["Health"])
@@ -188,7 +190,7 @@ def debug_proxy():
 
     debug_data = {
         "proxy_configured": bool(proxy_url),
-        "proxy_url_masked": f"{proxy_url[:15]}...{proxy_url[-5:]}" if proxy_url else None,
+        "proxy_url_masked": "[configured]" if proxy_url else None,
         "server_ip_check": "Checking...",
         "error": None
     }
@@ -200,11 +202,13 @@ def debug_proxy():
             proxies=proxies, 
             timeout=10
         )
+        response.raise_for_status()
         debug_data["server_ip_check"] = response.json().get("ip")
     except Exception as e:
-        logger.error(f"[Debug] Proxy check failed: {e}")
+        # Proxy exceptions can contain the full URL, including credentials.
+        logger.error("[Debug] Proxy check failed (%s)", type(e).__name__)
         debug_data["server_ip_check"] = "Failed"
-        debug_data["error"] = str(e)
+        debug_data["error"] = type(e).__name__
 
     return debug_data
 

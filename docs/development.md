@@ -24,7 +24,7 @@ Execute a aplicação e as ferramentas a partir da raiz do repositório.
 | Variável | Padrão | Uso |
 | --- | --- | --- |
 | `APP_NAME` | `Novel Scraper API` | Nome apresentado pela API |
-| `DEBUG` | `false` | Imprime o tempo das requisições no terminal |
+| `DEBUG` | `false` | Imprime o tempo das requisições e habilita `/dev/token` para emissão local de JWT pelo Swagger |
 | `API_JWT_SECRET` | vazio | Segredo HS256; vazio dispensa validação no desenvolvimento |
 | `MAX_CHAPTERS_LIMIT` | `1000` | Limite de `qty` na rota de geração |
 | `DEFAULT_TIMEOUT` | `15` | Timeout usado pela base e pelo scraper RoyalRoad; outros scrapers também têm valores locais de 10/15 s |
@@ -35,6 +35,7 @@ Execute a aplicação e as ferramentas a partir da raiz do repositório.
 `src/config.py` usa `pydantic-settings` e mantém uma instância de configuração
 em cache. Reinicie o servidor ao alterar o `.env`. Os serviços de busca também
 carregam o proxy por `python-dotenv`/variáveis de ambiente.
+Veja [configuração e teste com Webshare](proxy-setup.md) para ativar o proxy.
 
 ## Caminho de uma geração
 

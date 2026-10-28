@@ -9,6 +9,7 @@ FastAPI fica em `/docs`, com o esquema em `/openapi.json`.
 | --- | --- | --- |
 | `GET /` | Estado do serviço | Pública |
 | `GET /search/` | Busca por `source` e `query` | Pública |
+| `POST /dev/token` | Emite JWT de teste por uma hora | Somente com `DEBUG=true` e acesso local |
 | `POST /books/generate` | Inicia uma geração | JWT quando configurado |
 | `GET /books/events/{task_id}` | Stream de progresso SSE | JWT quando configurado |
 | `GET /books/download/{task_id}` | Download do EPUB pronto | JWT quando configurado |
@@ -26,6 +27,27 @@ O código registra `sub` e `tier`, mas atualmente não exige esses dois campos.
 Tokens inválidos ou ausentes recebem `401`; uma ação diferente recebe `403`.
 Sem segredo configurado, a verificação é dispensada para desenvolvimento.
 Os testes offline de geração substituem essa autenticação; não a validam.
+
+### Gerar um token pelo Swagger local
+
+Para testar a autenticação sem gerar tokens pelo terminal:
+
+1. No `.env`, defina `DEBUG=true` e preencha `API_JWT_SECRET` com um segredo local.
+2. Reinicie a API e abra `http://127.0.0.1:8000/docs`.
+3. Em **Local development**, execute `POST /dev/token` com **Try it out → Execute**.
+4. Copie o campo `access_token` da resposta. Em **Authorize**, cole somente o
+   token, sem o prefixo `Bearer`, e confirme em **Authorize**.
+5. Execute as rotas `/books` pelo Swagger; o header será enviado automaticamente.
+
+O token vale por uma hora e usa a identidade `local-test`, `tier: premium` e
+`action: generate-epub`. Quando expirar, gere outro e atualize **Authorize**.
+O segredo permanece no servidor; a resposta contém somente o token e sua validade.
+
+A rota não é registrada com `DEBUG=false` e aceita somente conexões de loopback
+com host local (`localhost`, `127.0.0.1` ou `::1`). Origens de outras páginas são
+recusadas. Use diretamente a API local, sem proxy reverso, e mantenha `DEBUG=false`
+na publicação. A autenticação das rotas `/books` continua ativa com o segredo
+preenchido, mesmo com `DEBUG=true`.
 
 ## Exemplo local no PowerShell
 

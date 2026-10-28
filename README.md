@@ -29,6 +29,11 @@ e `/` para verificar o estado do serviço. Sem `API_JWT_SECRET`, a autenticaçã
 é dispensada no desenvolvimento local. Configure esse segredo no ambiente de
 publicação antes de expor as rotas de geração.
 
+Para testar JWT localmente sem gerar tokens no terminal, configure
+`API_JWT_SECRET` e `DEBUG=true`, reinicie a API e use `POST /dev/token` no
+`/docs`. Cole o `access_token` retornado em **Authorize**. Esse helper só aceita
+acesso local e não é registrado com `DEBUG=false`; veja o [passo a passo](docs/api.md#gerar-um-token-pelo-swagger-local).
+
 ## Fontes implementadas
 
 | Fonte | Identificador da busca | Domínios registrados para geração |
